@@ -1,6 +1,9 @@
 #[cfg(feature = "ssr")]
+use anyhow::Error as AnyhowError;
+
+#[cfg(feature = "ssr")]
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), AnyhowError> {
     use axum::Router;
     use inferno::{app::*, ServerState};
     use leptos::logging::log;
@@ -14,7 +17,7 @@ async fn main() {
     let routes = generate_route_list(App);
 
     // Create shared server state
-    let state = ServerState::new();
+    let state = ServerState::new()?;
 
     let app = Router::new()
         .leptos_routes_with_context(
@@ -35,7 +38,7 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app.into_make_service())
         .await
-        .unwrap();
+        .map_err(AnyhowError::from)
 }
 
 #[cfg(not(feature = "ssr"))]

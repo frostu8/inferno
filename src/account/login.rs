@@ -1,38 +1,41 @@
-//! Account authentication.
+//! Account login.
+
+#[cfg(feature = "ssr")]
+use super::Claims;
+
+use crate::error::Error as ApiError;
 
 use leptos::prelude::*;
 
-#[cfg(feature = "ssr")]
-use serde::{Deserialize, Serialize};
-
-/// Server-only claims.
-#[cfg(feature = "ssr")]
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Claims {
-    /// The username to identify as.
-    pub username: String,
-}
-
 /// Attempts password authentication for a username-password pair.
 #[server(endpoint = "account/signin")]
-pub async fn try_password_auth(username: String, password: String) -> Result<(), ServerFnError> {
+pub async fn password_auth(
+    username: String,
+    password: String,
+) -> Result<(), ServerFnError<ApiError>> {
     use crate::ServerState;
     use axum::http::{header, HeaderValue};
+    use chrono::Utc;
     use cookie::Cookie;
-    use hmac::{Hmac, Mac};
-    use jwt::SignWithKey;
+    use jsonwebtoken::{encode, Header};
     use leptos_axum::ResponseOptions;
-    use sha2::Sha256;
 
     // get signing key
     let state = expect_context::<ServerState>();
 
     // TODO: do proper password auth
-    let key: Hmac<Sha256> = Hmac::new_from_slice(state.jwt_secret.as_bytes())?;
+
+    let exp = (Utc::now().naive_utc() + chrono::naive::Days::new(1))
+        .and_utc()
+        .timestamp() as usize;
+
     let claims = Claims {
-        username: "frostu8".to_string(),
+        sub: "frostu8".to_string(),
+        exp,
     };
-    let token = claims.sign_with_key(&key)?;
+
+    let token = encode(&Header::default(), &claims, &state.keys.encoding)
+        .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
 
     // set cookie
     let response = expect_context::<ResponseOptions>();
@@ -47,10 +50,10 @@ pub async fn try_password_auth(username: String, password: String) -> Result<(),
 /// Displays a login form.
 #[component]
 pub fn Login() -> impl IntoView {
-    let try_password_auth = ServerAction::<TryPasswordAuth>::new();
+    let password_auth = ServerAction::<PasswordAuth>::new();
 
     view! {
-        <ActionForm action=try_password_auth>
+        <ActionForm action=password_auth>
             <label for="username">Username</label>
             <input type="text" id="username" name="username"/>
             <label for="password">Password</label>
