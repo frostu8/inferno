@@ -11,6 +11,10 @@ use anyhow::{anyhow, Error as AnyError};
 pub const NO_LOGIN_FOUND: u32 = 1001;
 /// Credentials were bad or mismatched.
 pub const BAD_CREDENTIALS: u32 = 1002;
+/// Authorization token was missing.
+pub const MISSING_AUTHORIZATION: u32 = 1003;
+/// Authorization token passed was bad.
+pub const BAD_AUTHORIZATION: u32 = 1004;
 
 /// The main API error type.
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -33,6 +37,8 @@ impl Error {
         let message = match code {
             NO_LOGIN_FOUND => "no login found",
             BAD_CREDENTIALS => "bad or mismatched credentials",
+            MISSING_AUTHORIZATION => "unauthorized",
+            BAD_AUTHORIZATION => "bad authorization, suggest: clear cache",
             _ => "unknown error",
         };
 

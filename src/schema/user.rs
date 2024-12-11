@@ -4,12 +4,33 @@ use sqlx::PgPool;
 
 use chrono::Utc;
 
+/// A user record.
+#[derive(sqlx::FromRow)]
+pub struct User {
+    pub id: i32,
+    pub username: String,
+}
+
 /// A password login record.
 #[derive(sqlx::FromRow)]
 pub struct PasswordLogin {
     pub user_id: i32,
     pub password_hash: String,
     pub salt: String,
+}
+
+/// Gets information about a user by username.
+pub async fn get_user(db: &PgPool, username: &str) -> Result<Option<User>, sqlx::Error> {
+    sqlx::query_as(
+        r#"
+        SELECT id, username
+        FROM users
+        WHERE username = $1
+        "#,
+    )
+    .bind(username)
+    .fetch_optional(db)
+    .await
 }
 
 /// Fetches the password login of a user.

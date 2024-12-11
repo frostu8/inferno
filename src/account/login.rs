@@ -17,7 +17,6 @@ pub async fn password_auth(
     use axum::http::{header, HeaderValue};
     use chrono::Utc;
     use cookie::{Cookie, SameSite};
-    use jsonwebtoken::{encode, Header};
     use leptos_axum::ResponseOptions;
 
     // get signing key
@@ -47,8 +46,7 @@ pub async fn password_auth(
             exp,
         };
 
-        let token = encode(&Header::default(), &claims, &state.keys.encoding)
-            .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
+        let token = super::grant_token(&claims)?;
 
         // set cookie
         let response = expect_context::<ResponseOptions>();
@@ -70,20 +68,33 @@ pub async fn password_auth(
 }
 
 /// Displays a login form.
+///
+/// Calls `on_complete` on a successful login.
 #[component]
-pub fn Login() -> impl IntoView {
+pub fn Login(mut on_complete: impl FnMut() + 'static) -> impl IntoView {
     let password_auth = ServerAction::<PasswordAuth>::new();
-
     let login_result = password_auth.value();
+
+    Effect::new(move |_| {
+        let result = login_result.get();
+
+        match result {
+            Some(Ok(())) => on_complete(),
+            _ => (),
+        }
+    });
+
     let err_msg = move || {
-        login_result.with(|i| match i {
+        let result = login_result.get();
+
+        match result {
             Some(Err(err)) => err.to_string(),
             _ => unreachable!(),
-        })
+        }
     };
 
     view! {
-        <ActionForm action=password_auth class:form-login>
+        <ActionForm action=password_auth attr:class="form-login">
             // TODO: error modals
             <Show
                 when=move || { matches!(login_result.get(), Some(Err(_))) }
@@ -93,7 +104,7 @@ pub fn Login() -> impl IntoView {
             <label for="username">Username</label>
             <input type="text" id="username" name="username"/>
             <label for="password">Password</label>
-            <input type="text" id="password" name="password"/>
+            <input type="password" id="password" name="password"/>
             <input type="submit" value="Login"/>
         </ActionForm>
     }

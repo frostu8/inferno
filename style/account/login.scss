@@ -3,9 +3,13 @@
 	display: flex;
 	flex-flow: column nowrap;
 	gap: 1em;
-}
 
-.form-login input[type="submit"] {
-	align-self: center;
-	width: 8em;
+	input[type="submit"] {
+		align-self: center;
+		width: 8em;
+	}
+
+	input {
+		font-size: 16px;
+	}
 }

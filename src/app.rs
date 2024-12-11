@@ -1,6 +1,6 @@
 //! Provides server entrypoints.
 
-use crate::account::login::Login;
+use crate::account::ShowCurrentUser;
 
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
@@ -56,6 +56,18 @@ pub fn App() -> impl IntoView {
 #[component]
 fn HomePage() -> impl IntoView {
     view! {
-        <Login/>
+        <Sidebar/>
+    }
+}
+
+/// Top level helper component to render the sidebar, along with the content to
+/// the side.
+#[component]
+pub fn Sidebar() -> impl IntoView {
+    view! {
+        <nav id="sidebar">
+            <h1>~/inferno</h1>
+            <ShowCurrentUser/>
+        </nav>
     }
 }
