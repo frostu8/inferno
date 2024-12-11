@@ -1,6 +1,7 @@
 //! Account authentication, management and creation.
 
 pub mod login;
+pub mod logout;
 
 use login::Login;
 
@@ -11,6 +12,7 @@ use crate::{error, ServerState};
 use serde::{Deserialize, Serialize};
 
 use leptos::prelude::*;
+use leptos::server_fn::codec::GetUrl;
 
 /// Account claims.
 ///
@@ -105,7 +107,7 @@ pub struct CurrentUser {
 }
 
 /// Gets information about the current user
-#[server(endpoint = "/user/~me")]
+#[server(endpoint = "/user/~me", input = GetUrl)]
 pub async fn get_current_user() -> Result<CurrentUser, ServerFnError<ApiError>> {
     use crate::schema::user::get_user;
 
@@ -128,12 +130,49 @@ pub async fn get_current_user() -> Result<CurrentUser, ServerFnError<ApiError>> 
 
 /// Shows the currently logged-in user, along with a button to logout.
 #[component]
-pub fn ShowCurrentUser() -> impl IntoView {
-    let (count, set_count) = signal(0);
-    let current_user = Resource::new(move || count.get(), |_| get_current_user());
+pub fn UserDigest(user: CurrentUser, mut on_logout: impl FnMut() + 'static) -> impl IntoView {
+    use web_sys::MouseEvent;
+
+    let logout_action = ServerAction::<logout::LogoutUser>::new();
+
+    Effect::new(move || {
+        if logout_action.value().get().is_some() {
+            on_logout();
+        }
+    });
+
+    view! {
+        <div class="user-digest">
+            <p>
+                "Signed in as "
+                <span class="username">{user.username}</span>
+            </p>
+            <a
+                href="/api/account/logout"
+                class="link-button"
+                on:click=move |ev: MouseEvent| {
+                    // if javascript is enabled, handle logout ourselves
+                    ev.prevent_default();
+                    logout_action.dispatch(logout::LogoutUser {});
+                }
+            >
+                Logout
+            </a>
+        </div>
+    }
+}
+
+/// Shows the currently logged-in user, along with a button to logout.
+///
+/// If the user isn't logged in, shows a dialogue to log in.
+#[component]
+pub fn UserPanel() -> impl IntoView {
+    let current_user = Resource::new(move || 0, |_| get_current_user());
 
     let show_user = move || match current_user.get() {
-        Some(Ok(user)) => Some(Ok(view! { <p>{user.username}</p> })),
+        Some(Ok(user)) => Some(Ok(view! {
+            <UserDigest user=user on_logout=move || current_user.refetch()/>
+        })),
         Some(Err(err)) => Some(Err(err)),
         None => None,
     };
@@ -142,7 +181,7 @@ pub fn ShowCurrentUser() -> impl IntoView {
         <Suspense>
             <ErrorBoundary
                 fallback=move |_| view! {
-                    <Login on_complete=move || *set_count.write() += 1 />
+                    <Login on_complete=move || current_user.refetch()/>
                 }
             >
                 {show_user}

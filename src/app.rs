@@ -1,6 +1,6 @@
 //! Provides server entrypoints.
 
-use crate::account::ShowCurrentUser;
+use crate::account::UserPanel;
 
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
@@ -67,7 +67,7 @@ pub fn Sidebar() -> impl IntoView {
     view! {
         <nav id="sidebar">
             <h1>~/inferno</h1>
-            <ShowCurrentUser/>
+            <UserPanel/>
         </nav>
     }
 }

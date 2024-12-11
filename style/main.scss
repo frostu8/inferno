@@ -1,5 +1,3 @@
-@use "account/login";
-
 $bg-primary: #000D14;
 $bg-primary-light: #001B29;
 $bg-secondary: #0C161C;
@@ -8,6 +6,9 @@ $bg-secondary-light: #12212B;
 $fg-primary: #C1121F;
 $fg-secondary: #780000;
 $fg-secondary-dark: #660000;
+
+@use "account/login";
+@use "sidebar";
 
 body {
 	font-family: "Noto Sans", sans-serif;
@@ -32,7 +33,10 @@ main {
 }
 
 button,
+a.link-button,
 input[type="submit"] {
+	text-decoration: none;
+	cursor: default;
 	padding: 4px;
 	border: 0;
 	border-radius: 4px;
