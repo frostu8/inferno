@@ -1,4 +1,12 @@
+@use "account/login";
+
 body {
-	font-family: sans-serif;
-	text-align: center;
+	font-family: "Noto Sans", sans-serif;
+}
+
+button,
+input[type="submit"] {
+	padding: 4px;
+	border: 0;
+	border-radius: 4px;
 }

@@ -1,0 +1,11 @@
+.form-login {
+	max-width: 30em;
+	display: flex;
+	flex-flow: column nowrap;
+	gap: 1em;
+}
+
+.form-login input[type="submit"] {
+	align-self: center;
+	width: 8em;
+}

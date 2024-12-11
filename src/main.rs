@@ -5,19 +5,33 @@ use anyhow::Error as AnyhowError;
 #[tokio::main]
 async fn main() -> Result<(), AnyhowError> {
     use axum::Router;
-    use inferno::{app::*, ServerState};
+    use inferno::{app::*, cli::Cli, ServerState};
     use leptos::logging::log;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
+    use std::env;
+
+    #[cfg(feature = "ssr")]
+    dotenv::dotenv().ok();
+
+    // Create shared server state
+    let database_url = match env::var("DATABASE_URL") {
+        Ok(url) => url,
+        Err(_) => {
+            log!("failed to get `DATABASE_URL`");
+            std::process::exit(1);
+        }
+    };
+    let state = ServerState::new(&database_url).await?;
+
+    // try expose cli
+    Cli::parse().run(&state).await;
 
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
     let leptos_options = conf.leptos_options;
     // Generate the list of routes in your Leptos App
     let routes = generate_route_list(App);
-
-    // Create shared server state
-    let state = ServerState::new()?;
 
     let app = Router::new()
         .leptos_routes_with_context(

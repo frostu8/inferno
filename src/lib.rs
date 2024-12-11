@@ -3,7 +3,14 @@ pub mod app;
 pub mod error;
 
 #[cfg(feature = "ssr")]
+pub mod cli;
+#[cfg(feature = "ssr")]
+pub mod passwords;
+#[cfg(feature = "ssr")]
+pub mod schema;
+#[cfg(feature = "ssr")]
 pub mod server;
+
 #[cfg(feature = "ssr")]
 pub use server::*;
 

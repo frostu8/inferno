@@ -8,6 +8,8 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use jsonwebtoken::{DecodingKey, EncodingKey};
 
+use sqlx::{pool::PoolOptions, PgPool};
+
 use anyhow::Error;
 
 /// Shared server state.
@@ -15,6 +17,8 @@ use anyhow::Error;
 /// Cheaply cloneable.
 #[derive(Clone)]
 pub struct ServerState {
+    /// A database connection pool.
+    pub pool: PgPool,
     /// The secret signing keys for tokens.
     ///
     /// This is randomly generated on app startup. This means that when the
@@ -24,7 +28,15 @@ pub struct ServerState {
 
 impl ServerState {
     /// Creates a new `ServerState`.
-    pub fn new() -> Result<ServerState, Error> {
+    ///
+    /// Will attempt to connect to the Postgres database at `db_connect_str`.
+    pub async fn new(db_connect_str: &str) -> Result<ServerState, Error> {
+        // establish database connection
+        let pool = PoolOptions::new()
+            // configure db
+            .connect(db_connect_str)
+            .await?;
+
         // randomly generate JWT secret
         let mut rng = StdRng::from_entropy();
         let mut bytes = [0u8; 256];
@@ -32,7 +44,7 @@ impl ServerState {
 
         let keys = Arc::from(SigningKeys::new(&encode_lower(&bytes))?);
 
-        Ok(ServerState { keys })
+        Ok(ServerState { pool, keys })
     }
 }
 
