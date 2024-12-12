@@ -7,7 +7,7 @@ use leptos::prelude::*;
 use leptos::Params;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
-    components::{Outlet, ParentRoute, Route, Router, Routes},
+    components::{Outlet, ParentRoute, Redirect, Route, Router, Routes},
     hooks::use_params,
     params::Params,
     path, SsrMode,
@@ -37,6 +37,10 @@ pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
+    let redirect_to_main = move || {
+        view! { <Redirect path="/~/Index"/> }
+    };
+
     view! {
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
@@ -47,7 +51,12 @@ pub fn App() -> impl IntoView {
 
         <Router>
             <Routes fallback=|| "Page not found.".into_view()>
-                <ParentRoute path=path!("/") view=Main ssr=SsrMode::Async>
+                <Route path=path!("") view=redirect_to_main/>
+                // weird HACK to get this to not destroy the api or packages
+                // but I actually secretly like it in a way, so much that I put
+                // it on the sidebar title
+                <ParentRoute path=path!("/~") view=Main ssr=SsrMode::Async>
+                    <Route path=path!("") view=redirect_to_main/>
                     <Route path=path!("*path") view=GetPage/>
                 </ParentRoute>
             </Routes>
@@ -81,7 +90,7 @@ pub fn Sidebar() -> impl IntoView {
     }
 }
 
-#[derive(Params, PartialEq)]
+#[derive(Debug, Params, PartialEq)]
 struct GetPageParams {
     path: Option<String>,
 }

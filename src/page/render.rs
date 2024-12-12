@@ -11,6 +11,9 @@ use crate::error::Error as ApiError;
 #[server(endpoint = "/page", input = GetUrl, output = SendPage)]
 pub async fn render_page(path: String) -> Result<Option<String>, ServerFnError<ApiError>> {
     use crate::ServerState;
+    use ammonia::{Builder, UrlRelative};
+    use pulldown_cmark::{html, Parser};
+    use std::collections::HashSet;
 
     let state = expect_context::<ServerState>();
 
@@ -27,8 +30,26 @@ pub async fn render_page(path: String) -> Result<Option<String>, ServerFnError<A
         .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
 
     if let Some(page) = page {
-        // TODO complex page render logic
-        Ok(Some(page.content))
+        let content = Parser::new(&page.content);
+
+        let mut html_output = String::with_capacity(page.content.len() * 3 / 2);
+        html::push_html(&mut html_output, content);
+
+        // sanitize html
+        // sorry sir, I won't be taking any XSS anytime soon
+        //
+        // cleans after Markdown to prevent any nasty expansion tricks
+        let mut generic_attributes = HashSet::new();
+        generic_attributes.insert("class");
+
+        let html_output = Builder::default()
+            .generic_attributes(generic_attributes)
+            .link_rel(Some("noopener noreferrer"))
+            .url_relative(UrlRelative::PassThrough)
+            .clean(&html_output)
+            .to_string();
+
+        Ok(Some(html_output))
     } else {
         Ok(None)
     }
@@ -64,5 +85,5 @@ fn PageInner(content: Result<Option<String>, ServerFnError<ApiError>>) -> impl I
 
 #[component]
 fn RenderPage(content: String) -> impl IntoView {
-    content.into_view()
+    view! { <div class="page-content" inner_html=content></div> }
 }
