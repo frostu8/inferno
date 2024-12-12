@@ -5,8 +5,8 @@ use crate::account::UserPanel;
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
-    components::{Route, Router, Routes},
-    StaticSegment,
+    components::{Outlet, ParentRoute, Route, Router, Routes},
+    path, SsrMode,
 };
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
@@ -41,27 +41,32 @@ pub fn App() -> impl IntoView {
         // sets the document title
         <Title text="inferno"/>
 
-        // content for this welcome page
         <Router>
-            <main>
-                <Routes fallback=|| "Page not found.".into_view()>
-                    <Route path=StaticSegment("") view=HomePage/>
-                </Routes>
-            </main>
+            <Routes fallback=|| "Page not found.".into_view()>
+                <ParentRoute path=path!("/") view=Main ssr=SsrMode::Async>
+                    <Route path=path!("") view=HomePage/>
+                </ParentRoute>
+            </Routes>
         </Router>
     }
 }
 
-/// Renders the home page of your application.
+/// Component that renders the main content to the side of a sidebar.
+///
+/// This is the main component useful for almost all pages on the site.
 #[component]
-fn HomePage() -> impl IntoView {
+pub fn Main() -> impl IntoView {
     view! {
-        <Sidebar/>
+        <div class="view-content">
+            <Sidebar/>
+            <main>
+                <Outlet/>
+            </main>
+        </div>
     }
 }
 
-/// Top level helper component to render the sidebar, along with the content to
-/// the side.
+/// Top level helper component to render a sidebar.
 #[component]
 pub fn Sidebar() -> impl IntoView {
     view! {
@@ -69,5 +74,13 @@ pub fn Sidebar() -> impl IntoView {
             <h1>~/inferno</h1>
             <UserPanel/>
         </nav>
+    }
+}
+
+/// Renders the home page of your application.
+#[component]
+fn HomePage() -> impl IntoView {
+    view! {
+        <h1>"Hi there!"</h1>
     }
 }

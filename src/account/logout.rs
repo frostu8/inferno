@@ -4,14 +4,13 @@
 //! option to reauthenticate.
 
 use leptos::prelude::*;
-use leptos::server_fn::codec::GetUrl;
 
 /// Screws up the `auth` cookie and redirects the user.
-#[server(endpoint = "account/logout", input = GetUrl)]
-pub async fn logout_user() -> Result<(), ServerFnError> {
-    use axum::http::{header, HeaderValue, StatusCode};
+#[server(endpoint = "account/logout")]
+pub async fn logout_user(redirect_to: Option<String>) -> Result<(), ServerFnError> {
+    use axum::http::{header, HeaderValue};
     use cookie::{Cookie, SameSite};
-    use leptos_axum::ResponseOptions;
+    use leptos_axum::{redirect, ResponseOptions};
 
     let response = expect_context::<ResponseOptions>();
 
@@ -23,8 +22,9 @@ pub async fn logout_user() -> Result<(), ServerFnError> {
         response.insert_header(header::SET_COOKIE, cookie);
     }
 
-    response.set_status(StatusCode::SEE_OTHER);
-    response.insert_header(header::LOCATION, HeaderValue::from_static("/"));
+    if let Some(url) = redirect_to {
+        redirect(&url);
+    }
 
     Ok(())
 }

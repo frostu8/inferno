@@ -6,18 +6,20 @@ use super::Claims;
 use crate::error::Error as ApiError;
 
 use leptos::prelude::*;
+use leptos_router::hooks::use_location;
 
 /// Attempts password authentication for a username-password pair.
 #[server(endpoint = "account/signin")]
 pub async fn password_auth(
     username: String,
     password: String,
+    redirect_to: Option<String>,
 ) -> Result<(), ServerFnError<ApiError>> {
     use crate::{error, passwords::hash_password, schema::user::get_password_login, ServerState};
     use axum::http::{header, HeaderValue};
     use chrono::Utc;
     use cookie::{Cookie, SameSite};
-    use leptos_axum::ResponseOptions;
+    use leptos_axum::{redirect, ResponseOptions};
 
     // get signing key
     let state = expect_context::<ServerState>();
@@ -61,6 +63,10 @@ pub async fn password_auth(
             response.insert_header(header::SET_COOKIE, cookie);
         }
 
+        if let Some(url) = redirect_to {
+            redirect(&url);
+        }
+
         Ok(())
     } else {
         Err(ApiError::from_code(error::BAD_CREDENTIALS).into())
@@ -68,21 +74,12 @@ pub async fn password_auth(
 }
 
 /// Displays a login form.
-///
-/// Calls `on_complete` on a successful login.
 #[component]
-pub fn Login(mut on_complete: impl FnMut() + 'static) -> impl IntoView {
+pub fn LoginForm() -> impl IntoView {
     let password_auth = ServerAction::<PasswordAuth>::new();
     let login_result = password_auth.value();
 
-    Effect::new(move |_| {
-        let result = login_result.get();
-
-        match result {
-            Some(Ok(())) => on_complete(),
-            _ => (),
-        }
-    });
+    let current_location = use_location();
 
     let err_msg = move || {
         let result = login_result.get();
@@ -105,6 +102,7 @@ pub fn Login(mut on_complete: impl FnMut() + 'static) -> impl IntoView {
             <input type="text" id="username" name="username"/>
             <label for="password">Password</label>
             <input type="password" id="password" name="password"/>
+            <input type="hidden" name="redirect_to" value=move || current_location.pathname.get() />
             <input type="submit" value="Login"/>
         </ActionForm>
     }

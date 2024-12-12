@@ -1,6 +1,7 @@
 pub mod account;
 pub mod app;
 pub mod error;
+pub mod user;
 
 #[cfg(feature = "ssr")]
 pub mod cli;

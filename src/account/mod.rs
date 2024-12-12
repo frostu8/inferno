@@ -3,16 +3,21 @@
 pub mod login;
 pub mod logout;
 
-use login::Login;
+use login::LoginForm;
+use logout::LogoutUser;
 
-use crate::error::Error as ApiError;
+use crate::user::{get_current_user, CurrentUser};
 #[cfg(feature = "ssr")]
-use crate::{error, ServerState};
+use crate::{
+    error::{self, Error as ApiError},
+    ServerState,
+};
 
+#[cfg(feature = "ssr")]
 use serde::{Deserialize, Serialize};
 
 use leptos::prelude::*;
-use leptos::server_fn::codec::GetUrl;
+use leptos_router::hooks::use_location;
 
 /// Account claims.
 ///
@@ -97,68 +102,22 @@ pub async fn extract_token() -> Result<Claims, ServerFnError<ApiError>> {
     }
 }
 
-/// Current user infromation.
-///
-/// May store private information that isn't to be shared otherwise.
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct CurrentUser {
-    /// The username of the user.
-    pub username: String,
-}
-
-/// Gets information about the current user
-#[server(endpoint = "/user/~me", input = GetUrl)]
-pub async fn get_current_user() -> Result<CurrentUser, ServerFnError<ApiError>> {
-    use crate::schema::user::get_user;
-
-    let token = extract_token().await?;
-
-    let state = expect_context::<ServerState>();
-
-    let user = get_user(&state.pool, &token.sub)
-        .await
-        .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
-
-    if let Some(user) = user {
-        Ok(CurrentUser {
-            username: user.username,
-        })
-    } else {
-        Err(ApiError::from_code(error::BAD_AUTHORIZATION).into())
-    }
-}
-
 /// Shows the currently logged-in user, along with a button to logout.
 #[component]
-pub fn UserDigest(user: CurrentUser, mut on_logout: impl FnMut() + 'static) -> impl IntoView {
-    use web_sys::MouseEvent;
+pub fn UserDigest(user: CurrentUser) -> impl IntoView {
+    let logout_user = ServerAction::<LogoutUser>::new();
 
-    let logout_action = ServerAction::<logout::LogoutUser>::new();
-
-    Effect::new(move || {
-        if logout_action.value().get().is_some() {
-            on_logout();
-        }
-    });
+    let current_location = use_location();
 
     view! {
-        <div class="user-digest">
+        <ActionForm attr:class="user-digest" action=logout_user>
             <p>
                 "Signed in as "
                 <span class="username">{user.username}</span>
             </p>
-            <a
-                href="/api/account/logout"
-                class="link-button"
-                on:click=move |ev: MouseEvent| {
-                    // if javascript is enabled, handle logout ourselves
-                    ev.prevent_default();
-                    logout_action.dispatch(logout::LogoutUser {});
-                }
-            >
-                Logout
-            </a>
-        </div>
+            <input type="hidden" name="redirect_to" value=move || current_location.pathname.get() />
+            <input type="submit" value="Logout"/>
+        </ActionForm>
     }
 }
 
@@ -169,23 +128,17 @@ pub fn UserDigest(user: CurrentUser, mut on_logout: impl FnMut() + 'static) -> i
 pub fn UserPanel() -> impl IntoView {
     let current_user = Resource::new(move || 0, |_| get_current_user());
 
-    let show_user = move || match current_user.get() {
-        Some(Ok(user)) => Some(Ok(view! {
-            <UserDigest user=user on_logout=move || current_user.refetch()/>
-        })),
-        Some(Err(err)) => Some(Err(err)),
-        None => None,
-    };
-
     view! {
         <Suspense>
-            <ErrorBoundary
-                fallback=move |_| view! {
-                    <Login on_complete=move || current_user.refetch()/>
-                }
+            <Show
+                when=move || matches!(current_user.get(), Some(Err(_)))
             >
-                {show_user}
-            </ErrorBoundary>
+                <LoginForm/>
+            </Show>
+            {move || match current_user.get() {
+                Some(Ok(user)) => Some(view! { <UserDigest user/> }),
+                _ => None
+            }}
         </Suspense>
     }
 }

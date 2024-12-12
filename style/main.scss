@@ -16,8 +16,8 @@ body {
 	background-color: $bg-primary-light;
 }
 
-main {
-	// center main on screen
+.view-content {
+	// center page content on screen
 	width: 1200px;
 	margin: auto;
 
@@ -30,6 +30,11 @@ main {
 
 	// other styles
 	background-color: $bg-primary-light;
+}
+
+main {
+	color: white;
+	padding: 0 48px;
 }
 
 button,
