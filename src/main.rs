@@ -27,6 +27,13 @@ async fn main() -> Result<(), AnyhowError> {
     // try expose cli
     Cli::parse().run(&state).await;
 
+    // embed migrations
+    if let Err(err) = sqlx::migrate!("./migrations").run(&state.pool).await {
+        log!("failed to run migrations: {}", err);
+        log!("a database recreation may be necessary");
+        std::process::exit(1);
+    }
+
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
     let leptos_options = conf.leptos_options;
