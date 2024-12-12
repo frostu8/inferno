@@ -66,6 +66,11 @@ pub async fn push_page_changes(
         .map_err(|e| ServerFnError::ServerError(e.to_string()))?
         .unwrap_or_else(|| String::new());
 
+    if old_source == source {
+        // bail early if the two texts are the exact same
+        return Ok(());
+    }
+
     // do page diffing
     let dmp = DiffMatchPatch::new();
 
