@@ -1,12 +1,12 @@
-# For more details, see: https://fly.io/docs/app-guides/continuous-deployment-with-github-actions/
-
 name: Deploy to Fly.io
+
 on:
-push:
+  push:
     branches:
     - main
+
 jobs:
-deploy:
+  deploy:
     name: Deploy app
     runs-on: ubuntu-latest
     steps:
