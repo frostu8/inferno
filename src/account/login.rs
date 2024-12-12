@@ -13,7 +13,7 @@ use leptos_router::hooks::use_location;
 pub async fn password_auth(
     username: String,
     password: String,
-    redirect_to: Option<String>,
+    #[server(default)] redirect_to: Option<String>,
 ) -> Result<(), ServerFnError<ApiError>> {
     use crate::{error, passwords::hash_password, schema::user::get_password_login, ServerState};
     use axum::http::{header, HeaderValue};

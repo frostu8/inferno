@@ -7,7 +7,9 @@ use leptos::prelude::*;
 
 /// Screws up the `auth` cookie and redirects the user.
 #[server(endpoint = "account/logout")]
-pub async fn logout_user(redirect_to: Option<String>) -> Result<(), ServerFnError> {
+pub async fn logout_user(
+    #[server(default)] redirect_to: Option<String>,
+) -> Result<(), ServerFnError> {
     use axum::http::{header, HeaderValue};
     use cookie::{Cookie, SameSite};
     use leptos_axum::{redirect, ResponseOptions};

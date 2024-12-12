@@ -1,11 +1,15 @@
 //! Provides server entrypoints.
 
 use crate::account::UserPanel;
+use crate::page::render::Page;
 
 use leptos::prelude::*;
+use leptos::Params;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Outlet, ParentRoute, Route, Router, Routes},
+    hooks::use_params,
+    params::Params,
     path, SsrMode,
 };
 
@@ -44,7 +48,7 @@ pub fn App() -> impl IntoView {
         <Router>
             <Routes fallback=|| "Page not found.".into_view()>
                 <ParentRoute path=path!("/") view=Main ssr=SsrMode::Async>
-                    <Route path=path!("") view=HomePage/>
+                    <Route path=path!("*path") view=GetPage/>
                 </ParentRoute>
             </Routes>
         </Router>
@@ -77,10 +81,23 @@ pub fn Sidebar() -> impl IntoView {
     }
 }
 
-/// Renders the home page of your application.
+#[derive(Params, PartialEq)]
+struct GetPageParams {
+    path: Option<String>,
+}
+
 #[component]
-fn HomePage() -> impl IntoView {
-    view! {
-        <h1>"Hi there!"</h1>
-    }
+fn GetPage() -> impl IntoView {
+    let params = use_params::<GetPageParams>();
+
+    let path = Signal::derive(move || {
+        params
+            .read()
+            .as_ref()
+            .ok()
+            .and_then(|params| params.path.clone())
+            .unwrap_or_default()
+    });
+
+    view! { <Page path/> }
 }
