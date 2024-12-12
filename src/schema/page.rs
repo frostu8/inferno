@@ -67,7 +67,12 @@ where
     // calc hash
     let mut hasher = Sha256::new();
 
-    hasher.update(&changes);
+    // also has the author, page path and time
+    hasher.update(path);
+    hasher.update(author);
+    hasher.update(inserted_at.timestamp().to_le_bytes());
+    // hash changes
+    hasher.update(changes);
 
     let hash = hasher.finalize();
     let hash = encode_lower(&hash);
