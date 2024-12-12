@@ -1,6 +1,7 @@
 import {EditorView, basicSetup} from "codemirror";
 import {EditorState} from "@codemirror/state";
 import {markdown} from "@codemirror/lang-markdown";
+import {infernoTheme} from "./theme";
 
 /**
  * Upgrades a textarea to a CodeMirror editor.
@@ -15,8 +16,6 @@ import {markdown} from "@codemirror/lang-markdown";
  * @param {HTMLTextAreaElement} textArea - The text area to upgrade.
  */
 export function upgradeEditor(textArea: HTMLTextAreaElement) {
-  console.log(textArea);
-
   // hide textarea
   let parent = textArea.parentElement;
   textArea.classList.add("hidden");
@@ -25,7 +24,7 @@ export function upgradeEditor(textArea: HTMLTextAreaElement) {
     throw new Error("parent is null");
 
   // create editor plugin
-  let inferno = EditorView.updateListener.of((update) => {
+  let syncText = EditorView.updateListener.of((update) => {
     if (update.docChanged) {
       // update old textarea
       textArea.textContent = update.state.doc.toString();
@@ -35,7 +34,13 @@ export function upgradeEditor(textArea: HTMLTextAreaElement) {
   // initialize start state
   let startState = EditorState.create({
     doc: textArea.textContent || "",
-    extensions: [basicSetup, markdown(), EditorView.lineWrapping, inferno]
+    extensions: [
+      basicSetup,
+      markdown(),
+      EditorView.lineWrapping,
+      infernoTheme,
+      syncText
+    ]
   });
 
   // create editor
