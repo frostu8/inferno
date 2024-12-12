@@ -1,5 +1,6 @@
 pub mod account;
 pub mod app;
+pub mod components;
 pub mod error;
 pub mod page;
 pub mod user;

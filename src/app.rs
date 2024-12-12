@@ -1,15 +1,11 @@
 //! Provides server entrypoints.
 
-use crate::account::UserPanel;
-use crate::page::Page;
+use crate::page::{EditPage, Page};
 
 use leptos::prelude::*;
-use leptos::Params;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
-    components::{Outlet, ParentRoute, Redirect, Route, Router, Routes},
-    hooks::use_params,
-    params::Params,
+    components::{Redirect, Route, Router, Routes},
     path, SsrMode,
 };
 
@@ -51,62 +47,16 @@ pub fn App() -> impl IntoView {
 
         <Router>
             <Routes fallback=|| "Page not found.".into_view()>
-                <Route path=path!("") view=redirect_to_main/>
-                // weird HACK to get this to not destroy the api or packages
-                // but I actually secretly like it in a way, so much that I put
-                // it on the sidebar title
-                <ParentRoute path=path!("/~") view=Main ssr=SsrMode::Async>
-                    <Route path=path!("") view=redirect_to_main/>
-                    <Route path=path!("*path") view=GetPage/>
-                </ParentRoute>
+                // accessibility
+                <Route path=path!("") view=redirect_to_main ssr=SsrMode::Async/>
+                <Route path=path!("~") view=redirect_to_main ssr=SsrMode::Async/>
+                // ~ prefix is a weird HACK to get this to not destroy the api
+                // or packages but I actually secretly like it in a way, so
+                // much that I put it on the sidebar title
+                <Route path=path!("~/*path") view=Page ssr=SsrMode::Async/>
+                // same for page editing
+                <Route path=path!("~edit/*path") view=EditPage ssr=SsrMode::Async/>
             </Routes>
         </Router>
     }
-}
-
-/// Component that renders the main content to the side of a sidebar.
-///
-/// This is the main component useful for almost all pages on the site.
-#[component]
-pub fn Main() -> impl IntoView {
-    view! {
-        <div class="view-content">
-            <Sidebar/>
-            <main>
-                <Outlet/>
-            </main>
-        </div>
-    }
-}
-
-/// Top level helper component to render a sidebar.
-#[component]
-pub fn Sidebar() -> impl IntoView {
-    view! {
-        <nav id="sidebar">
-            <h1>~/inferno</h1>
-            <UserPanel/>
-        </nav>
-    }
-}
-
-#[derive(Debug, Params, PartialEq)]
-struct GetPageParams {
-    path: Option<String>,
-}
-
-#[component]
-fn GetPage() -> impl IntoView {
-    let params = use_params::<GetPageParams>();
-
-    let path = Signal::derive(move || {
-        params
-            .read()
-            .as_ref()
-            .ok()
-            .and_then(|params| params.path.clone())
-            .unwrap_or_default()
-    });
-
-    view! { <Page path/> }
 }

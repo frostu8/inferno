@@ -15,6 +15,10 @@ pub const BAD_CREDENTIALS: u32 = 1002;
 pub const MISSING_AUTHORIZATION: u32 = 1003;
 /// Authorization token passed was bad.
 pub const BAD_AUTHORIZATION: u32 = 1004;
+/// The page or model was not found.
+pub const NOT_FOUND: u32 = 1005;
+/// Edits to this page have been protected.
+pub const EDITS_FORBIDDEN: u32 = 1006;
 
 /// The main API error type.
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -39,10 +43,27 @@ impl Error {
             BAD_CREDENTIALS => "bad or mismatched credentials",
             MISSING_AUTHORIZATION => "unauthorized",
             BAD_AUTHORIZATION => "bad authorization, suggest: clear cache",
+            NOT_FOUND => "not found",
+            EDITS_FORBIDDEN => "this page is protected",
             _ => "unknown error",
         };
 
         Error::new(code, message)
+    }
+
+    /// The message of the error.
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+
+    /// The error's code.
+    pub fn code(&self) -> u32 {
+        self.code
+    }
+
+    /// Checks if the error was because the page wasn't found.
+    pub fn not_found(&self) -> bool {
+        self.code == NOT_FOUND
     }
 }
 

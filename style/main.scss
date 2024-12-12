@@ -31,6 +31,10 @@ body {
 
 	// other styles
 	background-color: $bg-primary-light;
+
+	main {
+		flex-grow: 1;
+	}
 }
 
 main {
@@ -41,10 +45,10 @@ main {
 
 a {
 	color: $fg-primary;
-}
 
-a:visited {
-	color: $fg-accent;
+	&:visited {
+		color: $fg-accent;
+	}
 }
 
 button,
@@ -88,10 +92,61 @@ input[type="password"] {
 #sidebar {
 	background-color: $bg-primary;
 	color: white;
-	width: 300px;
+	flex-basis: 300px;
+	flex-shrink: 0;
 	padding: 0 24px;
 }
 
 #sidebar h1 {
 	color: $fg-primary;
+}
+
+a.sidebar-item {
+	text-decoration: none;
+
+	&:visited {
+		color: $fg-primary;
+	}
+}
+
+a.sidebar-item p {
+	border-bottom: 2px dotted $bg-secondary-light;
+	margin: 0.5em 0;
+	padding: 0.5em 0;
+}
+
+.title {
+	border-bottom: 2px dotted gray;
+	padding-bottom: 16px;
+}
+
+.subtitle {
+  color: gray;
+	font-size: 16px;
+}
+
+.editor {
+	textarea {
+		width: 100%;
+		font-size: 14px;
+		resize: vertical;
+		border: 0;
+		background-color: $bg-secondary;
+		color: white;
+
+		:focus {
+			outline: none;
+		}
+	}
+
+	input[type="submit"] {
+		font-size: 16px;
+		padding: 0.5em 1em;
+	}
+}
+
+.page-admin {
+	display: flex;
+	padding-bottom: 16px;
+	justify-content: center;
 }
