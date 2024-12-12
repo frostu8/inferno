@@ -6,6 +6,7 @@ $bg-secondary-light: #12212B;
 $fg-primary: #C1121F;
 $fg-secondary: #780000;
 $fg-secondary-dark: #660000;
+$fg-accent: #FFF3B0;
 
 @use "account/login";
 @use "sidebar";
@@ -36,6 +37,14 @@ main {
 	color: white;
 	padding: 0 48px;
 	margin: 16px 0;
+}
+
+a {
+	color: $fg-primary;
+}
+
+a:visited {
+	color: $fg-accent;
 }
 
 button,

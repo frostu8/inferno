@@ -1,4 +1,8 @@
-//! Support for rendering pages.
+//! Page rendering logic.
+//!
+//! This module is *specifically* the server-side rendering of pages, because
+//! it is rather nuanced and long. It also determines some rules on how to
+//! parse pages.
 
 use leptos::prelude::*;
 use leptos::server_fn::codec::GetUrl;
@@ -53,37 +57,4 @@ pub async fn render_page(path: String) -> Result<Option<String>, ServerFnError<A
     } else {
         Ok(None)
     }
-}
-
-/// Shows a page.
-#[component]
-pub fn Page(#[prop(into)] path: Signal<String>) -> impl IntoView {
-    let content = Resource::new(move || path.get(), move |path| render_page(path));
-
-    view! {
-        <Suspense>
-            {move || Suspend::new(async move {
-                let content = content.await;
-
-                view! {
-                    <PageInner content=content />
-                }
-            })}
-        </Suspense>
-    }
-}
-
-#[component]
-fn PageInner(content: Result<Option<String>, ServerFnError<ApiError>>) -> impl IntoView {
-    match content {
-        Ok(Some(content)) => view! { <RenderPage content/> }.into_any(),
-        // TODO better error showing
-        Ok(None) => view! { "not found" }.into_any(),
-        Err(_) => view! { "error" }.into_any(),
-    }
-}
-
-#[component]
-fn RenderPage(content: String) -> impl IntoView {
-    view! { <div class="page-content" inner_html=content></div> }
 }

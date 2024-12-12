@@ -1,7 +1,7 @@
 //! Provides server entrypoints.
 
 use crate::account::UserPanel;
-use crate::page::render::Page;
+use crate::page::Page;
 
 use leptos::prelude::*;
 use leptos::Params;

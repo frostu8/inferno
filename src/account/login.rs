@@ -54,6 +54,9 @@ pub async fn password_auth(
         let response = expect_context::<ResponseOptions>();
         let cookie = Cookie::build(("auth", token))
             .path("/")
+            .expires(Some(
+                cookie::time::OffsetDateTime::from_unix_timestamp(exp as i64).unwrap(),
+            ))
             .same_site(SameSite::Strict);
 
         #[cfg(not(debug_assertions))]

@@ -1,7 +1,11 @@
 //! Pages, the top-level construct of inferno.
+//!
+//! This module contains some shared page codecs and components. All the render
+//! logic has been sectioned off in `render` since it is quite complicated.
 
 pub mod render;
 
+use leptos::prelude::*;
 use leptos::server_fn::codec::{Encoding, FromRes, IntoRes};
 use leptos::server_fn::response::ClientRes;
 use leptos::server_fn::ServerFnError;
@@ -62,4 +66,29 @@ where
             Ok(Some(res.try_into_string().await?))
         }
     }
+}
+
+#[component]
+pub fn Page(#[prop(into)] path: Signal<String>) -> impl IntoView {
+    let content = Resource::new(move || path.get(), move |path| render::render_page(path));
+
+    view! {
+        <Suspense>
+            {move || Suspend::new(async move {
+                let content = content.await;
+
+                match content {
+                    Ok(Some(content)) => view! { <RenderPage content/> }.into_any(),
+                    // TODO better error showing
+                    Ok(None) => view! { "not found" }.into_any(),
+                    Err(_) => view! { "error" }.into_any(),
+                }
+            })}
+        </Suspense>
+    }
+}
+
+#[component]
+fn RenderPage(content: String) -> impl IntoView {
+    view! { <div class="page-content" inner_html=content></div> }
 }
