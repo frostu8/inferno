@@ -34,6 +34,7 @@ dotenv = { version = "0.15.0", optional = true }
 clap = { version = "4.5.23", optional = true, features = ["derive"] }
 web-sys = { version = "=0.3.73", features = [
     "MouseEvent",
+    "HtmlTextAreaElement",
 ] }
 pulldown-cmark = { version = "0.12.2", optional = true }
 ammonia = { version = "4.0.0", optional = true }

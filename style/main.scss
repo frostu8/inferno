@@ -89,6 +89,10 @@ input[type="password"] {
 	font-family: caption;
 }
 
+.hidden {
+	display: none;
+}
+
 #sidebar {
 	background-color: $bg-primary;
 	color: white;
@@ -149,4 +153,8 @@ a.sidebar-item p {
 	display: flex;
 	padding-bottom: 16px;
 	justify-content: center;
+}
+
+.editor .cm-editor {
+	width: 750px;
 }
