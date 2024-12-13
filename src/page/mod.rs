@@ -143,7 +143,7 @@ pub fn EditPage() -> impl IntoView {
     let page_suspense = move || {
         Suspend::new(async move {
             match page.await {
-                Ok(page) => view! { <PageEditor path initial_content=page.source /> }.into_any(),
+                Ok(page) => view! { <PageEditor path page /> }.into_any(),
                 // TODO better 500 pages
                 Err(_) => view! { "error" }.into_any(),
             }

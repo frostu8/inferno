@@ -19,6 +19,8 @@ pub const BAD_AUTHORIZATION: u32 = 1004;
 pub const NOT_FOUND: u32 = 1005;
 /// Edits to this page have been protected.
 pub const EDITS_FORBIDDEN: u32 = 1006;
+/// The page was edited while editing.
+pub const PAGE_ALREADY_CHANGED: u32 = 1007;
 
 /// The main API error type.
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -45,6 +47,7 @@ impl Error {
             BAD_AUTHORIZATION => "bad authorization, suggest: clear cache",
             NOT_FOUND => "not found",
             EDITS_FORBIDDEN => "this page is protected",
+            PAGE_ALREADY_CHANGED => "other changes were made to this page; reload",
             _ => "unknown error",
         };
 

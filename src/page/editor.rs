@@ -6,7 +6,7 @@ use wasm_bindgen::prelude::*;
 
 use web_sys::HtmlTextAreaElement;
 
-use crate::page::edit::PushPageChanges;
+use crate::page::edit::{PageSource, PushPageChanges};
 
 /// The page editor.
 ///
@@ -15,25 +15,49 @@ use crate::page::edit::PushPageChanges;
 /// `initial_content`, which means the content of the page may change, but the
 /// initial content will not.
 #[component]
-pub fn PageEditor(path: Signal<String>, initial_content: String) -> impl IntoView {
+pub fn PageEditor(path: Signal<String>, page: PageSource) -> impl IntoView {
     let textarea_ref = NodeRef::<Textarea>::new();
+
+    let (last_hash, set_last_hash) = signal(page.latest_change_hash);
 
     let push_page_changes = ServerAction::<PushPageChanges>::new();
 
+    let err_msg = move || {
+        let result = push_page_changes.value().get();
+
+        match result {
+            Some(Err(err)) => err.to_string(),
+            _ => unreachable!(),
+        }
+    };
+
+    // CodeMirror support, calls into the Inferno ext JS.
     Effect::new(move || {
         if let Some(node) = textarea_ref.get() {
             upgrade_editor(node);
         }
     });
 
+    // For making updates.
+    Effect::new(move || {
+        if let Some(Ok(change)) = push_page_changes.value().get() {
+            set_last_hash(change.hash);
+        }
+    });
+
     view! {
         <ActionForm attr:class="editor" action=push_page_changes>
+            // TODO: error modals
+            <Show when=move || push_page_changes.value().with(|c| matches!(c, Some(Err(_))))>
+                <p>{err_msg}</p>
+            </Show>
             <div class="page-admin">
                 <input type="submit" value="Save Changes" />
             </div>
             <textarea node_ref=textarea_ref id="page-source" name="source" rows="40">
-                {initial_content}
+                {page.source}
             </textarea>
+            <input type="hidden" name="latest_change_hash" value=last_hash />
             <input type="hidden" name="path" value=path />
         </ActionForm>
     }
