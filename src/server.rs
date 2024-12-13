@@ -18,7 +18,7 @@ use anyhow::{bail, Error};
 /// Server config.
 ///
 /// Can construct a [`ServerState`] using [`ServerStateConfig::build`].
-#[derive(Clone, Deserialize, PartialEq)]
+#[derive(Clone, Default, Deserialize, PartialEq)]
 pub struct ServerStateConfig {
     database_url: Option<String>,
     signing_key: Option<String>,
@@ -52,15 +52,6 @@ impl ServerStateConfig {
     /// Builds a [`ServerState`], establishing any needed connections and such.
     pub fn build(self) -> impl Future<Output = Result<ServerState, Error>> {
         ServerState::new(self)
-    }
-}
-
-impl Default for ServerStateConfig {
-    fn default() -> Self {
-        Self {
-            database_url: None,
-            signing_key: None,
-        }
     }
 }
 
@@ -127,8 +118,8 @@ impl SigningKeys {
         );
 
         Ok(SigningKeys {
-            encoding: EncodingKey::from_base64_secret(&secret)?,
-            decoding: DecodingKey::from_base64_secret(&secret)?,
+            encoding: EncodingKey::from_base64_secret(secret)?,
+            decoding: DecodingKey::from_base64_secret(secret)?,
         })
     }
 }

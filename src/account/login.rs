@@ -96,17 +96,15 @@ pub fn LoginForm() -> impl IntoView {
     view! {
         <ActionForm action=password_auth attr:class="form-login">
             // TODO: error modals
-            <Show
-                when=move || { matches!(login_result.get(), Some(Err(_))) }
-            >
+            <Show when=move || { matches!(login_result.get(), Some(Err(_))) }>
                 <p>{err_msg}</p>
             </Show>
             <label for="username">Username</label>
-            <input type="text" id="username" name="username"/>
+            <input type="text" id="username" name="username" />
             <label for="password">Password</label>
-            <input type="password" id="password" name="password"/>
+            <input type="password" id="password" name="password" />
             <input type="hidden" name="redirect_to" value=move || current_location.pathname.get() />
-            <input type="submit" value="Login"/>
+            <input type="submit" value="Login" />
         </ActionForm>
     }
 }

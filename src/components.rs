@@ -11,7 +11,7 @@ pub fn Sidebar(children: Children) -> impl IntoView {
     view! {
         <nav id="sidebar">
             <h1>~/inferno</h1>
-            <UserPanel/>
+            <UserPanel />
             {children()}
         </nav>
     }

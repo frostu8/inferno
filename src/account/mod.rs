@@ -111,12 +111,9 @@ pub fn UserDigest(user: CurrentUser) -> impl IntoView {
 
     view! {
         <ActionForm attr:class="user-digest" action=logout_user>
-            <p>
-                "Signed in as "
-                <span class="username">{user.username}</span>
-            </p>
+            <p>"Signed in as " <span class="username">{user.username}</span></p>
             <input type="hidden" name="redirect_to" value=move || current_location.pathname.get() />
-            <input type="submit" value="Logout"/>
+            <input type="submit" value="Logout" />
         </ActionForm>
     }
 }
@@ -130,14 +127,12 @@ pub fn UserPanel() -> impl IntoView {
 
     view! {
         <Suspense>
-            <Show
-                when=move || matches!(current_user.get(), Some(Err(_)))
-            >
-                <LoginForm/>
+            <Show when=move || matches!(current_user.get(), Some(Err(_)))>
+                <LoginForm />
             </Show>
             {move || match current_user.get() {
-                Some(Ok(user)) => Some(view! { <UserDigest user/> }),
-                _ => None
+                Some(Ok(user)) => Some(view! { <UserDigest user /> }),
+                _ => None,
             }}
         </Suspense>
     }

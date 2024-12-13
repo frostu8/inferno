@@ -81,9 +81,7 @@ impl FromStr for Error {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.trim();
 
-        if s.starts_with("(") {
-            let s = &s[1..];
-
+        if let Some(s) = s.strip_prefix("(") {
             match s.find(")") {
                 Some(idx) => {
                     let code = s[..idx].parse::<u32>()?;

@@ -50,17 +50,16 @@ pub fn Page() -> impl IntoView {
     });
 
     // wait for content
-    let page = Resource::new(move || path.get(), move |path| render_page(path));
+    let page = Resource::new(move || path.get(), render_page);
     let page_suspense = move || {
         Suspend::new(async move {
             match page.await {
-                Ok(page) => view! { <RenderPage page/> }.into_any(),
+                Ok(page) => view! { <RenderPage page /> }.into_any(),
                 Err(ServerFnError::WrappedServerError(e)) if e.not_found() => view! {
                     // TODO only show edit button to logged users
                     <p>
                         "This page does not exist. You can create it "
-                        <A href=href_edit_page>"here"</A>
-                        "."
+                        <A href=href_edit_page>"here"</A> "."
                     </p>
                 }
                 .into_any(),
@@ -81,26 +80,24 @@ pub fn Page() -> impl IntoView {
             <Sidebar>
                 // edit page button
                 <Suspense>
-                    <Show
-                        when=page_editable
-                    >
+                    <Show when=page_editable>
                         <SidebarItem text="Edit Page" href=href_edit_page />
                     </Show>
                 </Suspense>
             </Sidebar>
             <main>
-                <PageSubtitle path/>
+                <PageSubtitle path />
                 <h1 class="title">
-                    {move || path.with(|path| {
-                        // get last path component
-                        Path::new(path)
-                            .file_name()
-                            .map(|s| s.to_string_lossy().into_owned())
-                    })}
+                    {move || {
+                        path
+                            .with(|path| {
+                                Path::new(path)
+                                    .file_name()
+                                    .map(|s| s.to_string_lossy().into_owned())
+                            })
+                    }}
                 </h1>
-                <Suspense>
-                    {page_suspense}
-                </Suspense>
+                <Suspense>{page_suspense}</Suspense>
             </main>
         </div>
     }
@@ -120,7 +117,6 @@ pub fn RenderPage(page: RenderedPage) -> impl IntoView {
         <Meta name="description" content=summary />
         <Meta name="og:title" content=page.title.clone() />
         <Meta name="og:type" content="article" />
-        // TODO check if there is a way to get the base url? is this a thing?
     }
 }
 
@@ -146,11 +142,11 @@ pub fn EditPage() -> impl IntoView {
     });
 
     // wait for content
-    let page = Resource::new(move || path.get(), move |path| get_page_source(path));
+    let page = Resource::new(move || path.get(), get_page_source);
     let page_suspense = move || {
         Suspend::new(async move {
             match page.await {
-                Ok(page) => view! { <PageEditor path initial_content=page.source/> }.into_any(),
+                Ok(page) => view! { <PageEditor path initial_content=page.source /> }.into_any(),
                 // TODO better 500 pages
                 Err(_) => view! { "error" }.into_any(),
             }
@@ -164,19 +160,19 @@ pub fn EditPage() -> impl IntoView {
                 <SidebarItem text="View Page" href=href_view_page />
             </Sidebar>
             <main>
-                <PageSubtitle path/>
+                <PageSubtitle path />
                 <h1 class="title">
                     "Editing "
-                    {move || path.with(|path| {
-                        // get last path component
-                        Path::new(path)
-                            .file_name()
-                            .map(|s| s.to_string_lossy().into_owned())
-                    })}
+                    {move || {
+                        path
+                            .with(|path| {
+                                Path::new(path)
+                                    .file_name()
+                                    .map(|s| s.to_string_lossy().into_owned())
+                            })
+                    }}
                 </h1>
-                <Suspense>
-                    {page_suspense}
-                </Suspense>
+                <Suspense>{page_suspense}</Suspense>
             </main>
         </div>
     }
@@ -189,17 +185,17 @@ pub fn PageSubtitle(path: Signal<String>) -> impl IntoView {
 
     view! {
         <h1 class="subtitle">
-            {move || path.with(|path| {
-                // get last path component
-                Path::new(path)
-                    .parent()
-                    .map(|s| s.to_string_lossy())
-                    .and_then(|s| if !s.is_empty() {
-                        Some(format!("{}/", s))
-                    } else {
-                        None
+            {move || {
+                path
+                    .with(|path| {
+                        Path::new(path)
+                            .parent()
+                            .map(|s| s.to_string_lossy())
+                            .and_then(|s| {
+                                if !s.is_empty() { Some(format!("{}/", s)) } else { None }
+                            })
                     })
-            })}
+            }}
         </h1>
     }
 }

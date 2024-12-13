@@ -2,6 +2,8 @@
 use anyhow::Error as AnyhowError;
 
 #[cfg(feature = "ssr")]
+// HACK something in tokio::main is causing this lint to raise
+#[allow(clippy::needless_return)]
 #[tokio::main]
 async fn main() -> Result<(), AnyhowError> {
     use axum::Router;

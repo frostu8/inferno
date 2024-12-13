@@ -64,7 +64,7 @@ pub async fn push_page_changes(
     let old_source = get_page_content(&path, &state.pool)
         .await
         .map_err(|e| ServerFnError::ServerError(e.to_string()))?
-        .unwrap_or_else(|| String::new());
+        .unwrap_or_else(String::new);
 
     if old_source == source {
         // bail early if the two texts are the exact same

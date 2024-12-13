@@ -29,17 +29,12 @@ pub fn PageEditor(path: Signal<String>, initial_content: String) -> impl IntoVie
     view! {
         <ActionForm attr:class="editor" action=push_page_changes>
             <div class="page-admin">
-                <input type="submit" value="Save Changes"/>
+                <input type="submit" value="Save Changes" />
             </div>
-            <textarea
-                node_ref=textarea_ref
-                id="page-source"
-                name="source"
-                rows="40"
-            >
+            <textarea node_ref=textarea_ref id="page-source" name="source" rows="40">
                 {initial_content}
             </textarea>
-            <input type="hidden" name="path" value=path/>
+            <input type="hidden" name="path" value=path />
         </ActionForm>
     }
 }
