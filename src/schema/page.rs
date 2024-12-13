@@ -2,23 +2,62 @@
 
 use base16::encode_lower;
 use chrono::Utc;
-use sqlx::{Executor, PgPool, Postgres};
+use sqlx::{Executor, Postgres};
 
 use sha2::{Digest, Sha256};
 
-/// Gets the content of a page, returning it as a [`String`].
-pub async fn get_page_content(path: &str, db: &PgPool) -> Result<Option<String>, sqlx::Error> {
-    #[derive(sqlx::FromRow)]
-    struct Page {
-        pub content: String,
-    }
+/// Result of [`get_page_content`] and [`get_page_for_update`].
+#[derive(sqlx::FromRow)]
+pub struct Page {
+    pub content: String,
+    pub latest_change_hash: String,
+}
 
-    // get page
-    sqlx::query_as::<_, Page>("SELECT content FROM pages WHERE path = $1")
-        .bind(path)
-        .fetch_optional(db)
-        .await
-        .map(|result| result.map(|Page { content }| content))
+/// Gets the content of a page.
+pub async fn get_page_content<'c, E>(path: &str, db: E) -> Result<Option<Page>, sqlx::Error>
+where
+    E: Executor<'c, Database = Postgres>,
+{
+    sqlx::query_as(
+        r#"
+        SELECT p.content, c.hash AS latest_change_hash
+        FROM pages p
+        RIGHT JOIN changes c ON c.page_id = p.id
+        WHERE path = $1
+        ORDER BY c.inserted_at DESC
+        LIMIT 1
+        "#,
+    )
+    .bind(path)
+    .fetch_optional(db)
+    .await
+}
+
+/// Gets the content of a page for an update.
+///
+/// This function sets up a lock for an update, as opposed to
+/// [`get_page_content`]. If you just want the page, use [`get_page_content`].
+pub async fn get_page_content_for_update<'c, E>(
+    path: &str,
+    db: E,
+) -> Result<Option<Page>, sqlx::Error>
+where
+    E: Executor<'c, Database = Postgres>,
+{
+    sqlx::query_as(
+        r#"
+        SELECT p.content, c.hash AS latest_change_hash
+        FROM pages p
+        RIGHT JOIN changes c ON c.page_id = p.id
+        WHERE path = $1
+        ORDER BY c.inserted_at DESC
+        LIMIT 1
+        FOR UPDATE
+        "#,
+    )
+    .bind(path)
+    .fetch_optional(db)
+    .await
 }
 
 /// Updates the page content. Inserts a new page if it did not exist.
@@ -49,7 +88,7 @@ where
     .map(|_| ())
 }
 
-/// Saves a new change to the database.
+/// Saves a new change to the database. Returns the change hash.
 ///
 /// This does not actually modify the page; this function should typically be
 /// called in conjunction with [`update_page_content`].
@@ -58,7 +97,7 @@ pub async fn save_change<'c, E>(
     author: &str,
     changes: &str,
     db: E,
-) -> Result<(), sqlx::Error>
+) -> Result<String, sqlx::Error>
 where
     E: Executor<'c, Database = Postgres>,
 {
@@ -95,5 +134,5 @@ where
     .bind(inserted_at)
     .execute(db)
     .await
-    .map(|_| ())
+    .map(|_| hash)
 }

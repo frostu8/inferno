@@ -38,19 +38,19 @@ pub async fn render_page(path: String) -> Result<RenderedPage, ServerFnError<Api
     let token = extract_token().await;
 
     // get page
-    let content = get_page_content(&path, &state.pool)
+    let page = get_page_content(&path, &state.pool)
         .await
         .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
 
-    if let Some(content) = content {
+    if let Some(page) = page {
         let title = match path.rfind('/') {
             Some(idx) => path[idx + 1..].trim(),
             None => path.trim(),
         };
 
-        let parser = Parser::new(&content);
+        let parser = Parser::new(&page.content);
 
-        let mut html_output = String::with_capacity(content.len() * 3 / 2);
+        let mut html_output = String::with_capacity(page.content.len() * 3 / 2);
         html::push_html(&mut html_output, parser);
 
         // sanitize html
