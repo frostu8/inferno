@@ -3,10 +3,14 @@ $bg-primary-light: #001B29;
 $bg-secondary: #0C161C;
 $bg-secondary-light: #12212B;
 
-$fg-primary: #C1121F;
+$fg-primary: #EB2431;
+$fg-primary-dark: #AD101A;
 $fg-secondary: #780000;
 $fg-secondary-dark: #660000;
 $fg-accent: #FFF3B0;
+
+// different link color accessibility
+$fg-link: #EE8689;
 
 @use "account/login";
 @use "sidebar";
@@ -44,10 +48,10 @@ main {
 }
 
 a {
-	color: $fg-primary;
+	color: $fg-link;
 
 	&:visited {
-		color: $fg-accent;
+		color: $fg-link;
 	}
 }
 
@@ -59,7 +63,7 @@ input[type="submit"] {
 	padding: 4px;
 	border: 0;
 	border-radius: 4px;
-	background-color: $fg-primary;
+	background-color: $fg-primary-dark;
 	color: white;
 
 	&:hover {
@@ -80,7 +84,7 @@ input[type="password"] {
 	color: white;
 
 	&:focus {
-		border-color: $fg-primary;
+		border-color: $fg-primary-dark;
 		outline: none;
 	}
 }
@@ -106,7 +110,9 @@ input[type="password"] {
 }
 
 a.sidebar-item {
+	font-size: 18px;
 	text-decoration: none;
+	color: $fg-primary;
 
 	&:visited {
 		color: $fg-primary;

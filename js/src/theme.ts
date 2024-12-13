@@ -9,7 +9,8 @@ const background = "#001b29",
   lavender = "#A0A0CF",
   awesomeYellow = "#fff3b0",
   rose = "#E87EA1",
-  infernoRed = "#c1121f";
+  //infernoRed = "#eb2431",
+  link = "#EE8689";
 
 const infernoBaseTheme: Extension = EditorView.theme({
   "&": {
@@ -53,7 +54,7 @@ const infernoHighlightStyle = HighlightStyle.define([
   {tag: t.strikethrough,
    textDecoration: "line-through"},
   {tag: t.link,
-   color: infernoRed,
+   color: link,
    textDecoration: "underline"},
   {tag: t.heading,
    fontWeight: "bold",

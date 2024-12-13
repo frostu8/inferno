@@ -9,13 +9,14 @@ pub mod render;
 
 use leptos::prelude::*;
 use leptos::Params;
+use leptos_meta::{Meta, Title};
 use leptos_router::{components::A, hooks::use_params, params::Params};
 
 use edit::get_page_source;
 use editor::PageEditor;
-use render::render_page;
+use render::{render_page, RenderedPage};
 
-use crate::components::Sidebar;
+use crate::components::{Sidebar, SidebarItem};
 
 #[derive(Debug, Params, PartialEq)]
 struct PageParams {
@@ -47,21 +48,13 @@ pub fn Page() -> impl IntoView {
                 .into_owned()
         })
     });
-    let edit_page_btn = move || {
-        let href = href_edit_page.get();
-        view! {
-            <A attr:class="sidebar-item" href>
-                <p>"Edit Page"</p>
-            </A>
-        }
-    };
 
     // wait for content
     let page = Resource::new(move || path.get(), move |path| render_page(path));
     let page_suspense = move || {
         Suspend::new(async move {
             match page.await {
-                Ok(page) => view! { <RenderPage content=page.content/> }.into_any(),
+                Ok(page) => view! { <RenderPage page/> }.into_any(),
                 Err(ServerFnError::WrappedServerError(e)) if e.not_found() => view! {
                     // TODO only show edit button to logged users
                     <p>
@@ -91,7 +84,7 @@ pub fn Page() -> impl IntoView {
                     <Show
                         when=page_editable
                     >
-                    {edit_page_btn}
+                        <SidebarItem text="Edit Page" href=href_edit_page />
                     </Show>
                 </Suspense>
             </Sidebar>
@@ -115,8 +108,20 @@ pub fn Page() -> impl IntoView {
 
 /// Simply renders a page.
 #[component]
-pub fn RenderPage(content: String) -> impl IntoView {
-    view! { <div class="page-content" inner_html=content></div> }
+pub fn RenderPage(page: RenderedPage) -> impl IntoView {
+    // TODO generate summary of page
+    let summary = "inferno wiki".to_owned();
+
+    view! {
+        <div class="page-content" inner_html=page.content></div>
+        // meta controls
+        <Title text=page.title.clone() />
+
+        <Meta name="description" content=summary />
+        <Meta name="og:title" content=page.title.clone() />
+        <Meta name="og:type" content="article" />
+        // TODO check if there is a way to get the base url? is this a thing?
+    }
 }
 
 /// Provides an interface for editing a page.
@@ -139,14 +144,6 @@ pub fn EditPage() -> impl IntoView {
     let href_view_page = Memo::new(move |_| {
         path.with(|path| Path::new("/~").join(path).to_string_lossy().into_owned())
     });
-    let view_page_btn = move || {
-        let href = href_view_page.get();
-        view! {
-            <A attr:class="sidebar-item" href>
-                <p>"View Page"</p>
-            </A>
-        }
-    };
 
     // wait for content
     let page = Resource::new(move || path.get(), move |path| get_page_source(path));
@@ -164,7 +161,7 @@ pub fn EditPage() -> impl IntoView {
         <div class="view-content">
             <Sidebar>
                 // return to normal page
-                {view_page_btn}
+                <SidebarItem text="View Page" href=href_view_page />
             </Sidebar>
             <main>
                 <PageSubtitle path/>

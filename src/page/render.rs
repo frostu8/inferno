@@ -14,6 +14,11 @@ use serde::{Deserialize, Serialize};
 /// The output of [`render_page`].
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RenderedPage {
+    /// The title of the page.
+    ///
+    /// This can already be derived from the path on the client side, but is
+    /// here in case the functionality changes.
+    pub title: String,
     /// The content of the page, to be rendered as-is and sanitized.
     pub content: String,
     /// Whether the user can edit it or not.
@@ -38,6 +43,11 @@ pub async fn render_page(path: String) -> Result<RenderedPage, ServerFnError<Api
         .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
 
     if let Some(content) = content {
+        let title = match path.rfind('/') {
+            Some(idx) => path[idx + 1..].trim(),
+            None => path.trim(),
+        };
+
         let parser = Parser::new(&content);
 
         let mut html_output = String::with_capacity(content.len() * 3 / 2);
@@ -59,6 +69,7 @@ pub async fn render_page(path: String) -> Result<RenderedPage, ServerFnError<Api
 
         // construct page info
         Ok(RenderedPage {
+            title: title.into(),
             content: html_output,
             edit: token.is_ok(),
         })
