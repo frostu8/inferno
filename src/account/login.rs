@@ -106,8 +106,7 @@ pub fn LoginForm(#[prop(optional, into)] redirect_to: Signal<Option<String>>) ->
             {move || {
                 redirect_to
                     .with(|path| {
-                        path
-                            .as_ref()
+                        path.as_ref()
                             .map(|href| {
                                 view! {
                                     <input type="hidden" name="redirect_to" value=href.clone() />
