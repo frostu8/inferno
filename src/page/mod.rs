@@ -89,12 +89,9 @@ pub fn Page() -> impl IntoView {
                 <PageSubtitle path />
                 <h1 class="title">
                     {move || {
-                        path
-                            .with(|path| {
-                                Path::new(path)
-                                    .file_name()
-                                    .map(|s| s.to_string_lossy().into_owned())
-                            })
+                        path.with(|path| {
+                            Path::new(path).file_name().map(|s| s.to_string_lossy().into_owned())
+                        })
                     }}
                 </h1>
                 <Suspense>{page_suspense}</Suspense>
@@ -164,12 +161,9 @@ pub fn EditPage() -> impl IntoView {
                 <h1 class="title">
                     "Editing "
                     {move || {
-                        path
-                            .with(|path| {
-                                Path::new(path)
-                                    .file_name()
-                                    .map(|s| s.to_string_lossy().into_owned())
-                            })
+                        path.with(|path| {
+                            Path::new(path).file_name().map(|s| s.to_string_lossy().into_owned())
+                        })
                     }}
                 </h1>
                 <Suspense>{page_suspense}</Suspense>
@@ -186,15 +180,14 @@ pub fn PageSubtitle(path: Signal<String>) -> impl IntoView {
     view! {
         <h1 class="subtitle">
             {move || {
-                path
-                    .with(|path| {
-                        Path::new(path)
-                            .parent()
-                            .map(|s| s.to_string_lossy())
-                            .and_then(|s| {
-                                if !s.is_empty() { Some(format!("{}/", s)) } else { None }
-                            })
-                    })
+                path.with(|path| {
+                    Path::new(path)
+                        .parent()
+                        .map(|s| s.to_string_lossy())
+                        .and_then(|s| {
+                            if !s.is_empty() { Some(format!("{}/", s)) } else { None }
+                        })
+                })
             }}
         </h1>
     }
