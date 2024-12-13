@@ -3,9 +3,9 @@
 pub mod login;
 pub mod logout;
 
-use login::LoginForm;
 use logout::LogoutUser;
 
+use crate::components::SidebarItem;
 use crate::user::{get_current_user, CurrentUser};
 #[cfg(feature = "ssr")]
 use crate::{
@@ -107,33 +107,48 @@ pub async fn extract_token() -> Result<Claims, ServerFnError<ApiError>> {
 pub fn UserDigest(user: CurrentUser) -> impl IntoView {
     let logout_user = ServerAction::<LogoutUser>::new();
 
-    let current_location = use_location();
-
     view! {
         <ActionForm attr:class="user-digest" action=logout_user>
             <p>"Signed in as " <span class="username">{user.username}</span></p>
-            <input type="hidden" name="redirect_to" value=move || current_location.pathname.get() />
-            <input type="submit" value="Logout" />
+            // HACK this is the only way to tell the router to refresh the page
+            <input type="hidden" name="redirect_to" value="/" />
+            <input class="sidebar-item" type="submit" value="Logout" />
         </ActionForm>
     }
 }
 
-/// Shows the currently logged-in user, along with a button to logout.
-///
-/// If the user isn't logged in, shows a dialogue to log in.
+/// The sidebar session panel. Shows [`UserDigest`] if the user is not logged
+/// in.
 #[component]
-pub fn UserPanel() -> impl IntoView {
-    let current_user = Resource::new(move || 0, |_| get_current_user());
+pub fn SidebarSession() -> impl IntoView {
+    let current_user = OnceResource::new(get_current_user());
+
+    let location = use_location();
+
+    let login_url = move || {
+        location.pathname.with(|p| {
+            format!(
+                "/~account/login?redirect_to={}",
+                url_escape::encode_query(p)
+            )
+        })
+    };
+
+    let fallback = move || view! { <SidebarItem href=login_url text="Login" /> };
 
     view! {
-        <Suspense>
-            <Show when=move || matches!(current_user.get(), Some(Err(_)))>
-                <LoginForm />
-            </Show>
-            {move || match current_user.get() {
-                Some(Ok(user)) => Some(view! { <UserDigest user /> }),
-                _ => None,
-            }}
+        <Suspense fallback>
+            {move || Suspend::new(async move {
+                let current_user = current_user.await;
+                match current_user {
+                    Ok(user) => {
+
+                        view! { <UserDigest user /> }
+                            .into_any()
+                    }
+                    Err(_) => fallback().into_any(),
+                }
+            })}
         </Suspense>
     }
 }
