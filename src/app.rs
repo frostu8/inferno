@@ -1,5 +1,6 @@
 //! Provides server entrypoints.
 
+use crate::account::login::Login;
 use crate::page::{EditPage, Page};
 
 use leptos::prelude::*;
@@ -60,6 +61,8 @@ pub fn App() -> impl IntoView {
                 <Route path=path!("~/*path") view=Page ssr=SsrMode::Async />
                 // same for page editing
                 <Route path=path!("~edit/*path") view=EditPage ssr=SsrMode::Async />
+                // account management (login and register)
+                <Route path=path!("~account/login") view=Login ssr=SsrMode::Async />
             </Routes>
         </Router>
     }

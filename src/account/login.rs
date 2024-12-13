@@ -6,7 +6,9 @@ use super::Claims;
 use crate::error::Error as ApiError;
 
 use leptos::prelude::*;
-use leptos_router::hooks::use_location;
+use leptos::Params;
+use leptos_router::hooks::use_query;
+use leptos_router::params::Params;
 
 /// Attempts password authentication for a username-password pair.
 #[server(endpoint = "account/signin")]
@@ -78,11 +80,9 @@ pub async fn password_auth(
 
 /// Displays a login form.
 #[component]
-pub fn LoginForm() -> impl IntoView {
+pub fn LoginForm(#[prop(optional, into)] redirect_to: Signal<Option<String>>) -> impl IntoView {
     let password_auth = ServerAction::<PasswordAuth>::new();
     let login_result = password_auth.value();
-
-    let current_location = use_location();
 
     let err_msg = move || {
         let result = login_result.get();
@@ -103,8 +103,45 @@ pub fn LoginForm() -> impl IntoView {
             <input type="text" id="username" name="username" />
             <label for="password">Password</label>
             <input type="password" id="password" name="password" />
-            <input type="hidden" name="redirect_to" value=move || current_location.pathname.get() />
+            {move || {
+                redirect_to
+                    .with(|path| {
+                        path.as_ref()
+                            .map(|href| {
+                                view! {
+                                    <input type="hidden" name="redirect_to" value=href.clone() />
+                                }
+                            })
+                    })
+            }}
             <input type="submit" value="Login" />
         </ActionForm>
+    }
+}
+
+/// [`Login`] page parameters.
+#[derive(Debug, PartialEq, Params)]
+pub struct LoginPageQuery {
+    pub redirect_to: Option<String>,
+}
+
+/// The login page.
+#[component]
+pub fn Login() -> impl IntoView {
+    let query = use_query::<LoginPageQuery>();
+
+    let redirect_to = Signal::derive(move || {
+        query
+            .read()
+            .as_ref()
+            .ok()
+            .and_then(|q| q.redirect_to.clone())
+    });
+
+    view! {
+        <div class="login-form-container">
+            <h1>"~/inferno"</h1>
+            <LoginForm redirect_to />
+        </div>
     }
 }

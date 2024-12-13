@@ -15,7 +15,28 @@ $fg-link: #EE8689;
 @use "account/login";
 @use "sidebar";
 
+@mixin sidebar-item {
+	font-size: 18px;
+	text-decoration: none;
+	color: $fg-primary;
+	background-color: inherit;
+	cursor: pointer;
+	padding: 0;
+	border-radius: 0;
+
+	&:visited {
+		color: $fg-primary;
+	}
+
+	p {
+		border-bottom: 2px dotted $bg-secondary-light;
+		margin: 0.5em 0;
+		padding: 0.5em 0;
+	}
+}
+
 body {
+	color: white;
 	font-family: "Noto Sans", sans-serif;
 	margin: 0;
 	background-color: $bg-primary-light;
@@ -42,7 +63,6 @@ body {
 }
 
 main {
-	color: white;
 	padding: 0 48px;
 	margin: 16px 0;
 }
@@ -73,6 +93,13 @@ input[type="submit"] {
 	&:active {
 		background-color: $fg-secondary-dark;
 	}
+}
+
+input[type="submit"].sidebar-item {
+	@include sidebar-item;
+
+	padding: 0.5em 16px;
+	border-bottom: 2px dotted $bg-secondary-light;
 }
 
 input[type="text"],
@@ -109,20 +136,8 @@ input[type="password"] {
 	color: $fg-primary;
 }
 
-a.sidebar-item {
-	font-size: 18px;
-	text-decoration: none;
-	color: $fg-primary;
-
-	&:visited {
-		color: $fg-primary;
-	}
-}
-
-a.sidebar-item p {
-	border-bottom: 2px dotted $bg-secondary-light;
-	margin: 0.5em 0;
-	padding: 0.5em 0;
+.sidebar-item {
+	@include sidebar-item;
 }
 
 .title {
@@ -163,4 +178,16 @@ a.sidebar-item p {
 
 .editor .cm-editor {
 	width: 750px;
+}
+
+.login-form-container {
+	background-color: $bg-primary;
+	width: 400px;
+	padding: 1em 4em;
+	border-radius: 1em;
+	margin: 4em auto;
+
+	h1 {
+		color: $fg-primary;
+	}
 }
