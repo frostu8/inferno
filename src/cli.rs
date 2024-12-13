@@ -37,6 +37,10 @@ impl Cli {
                     std::process::exit(1);
                 }
             }
+            Command::Create(Create::SigningKey) => {
+                let key = crate::server::random_signing_key();
+                print!("{}", key);
+            }
         }
 
         std::process::exit(0);
@@ -56,6 +60,8 @@ pub enum Command {
 pub enum Create {
     /// Creates a new user.
     User(CreateUser),
+    /// Creates a new signing key for use in `TOKEN_SIGNING_KEY`
+    SigningKey,
 }
 
 /// Creates a new object in the database.

@@ -5,13 +5,12 @@ use anyhow::Error as AnyhowError;
 #[tokio::main]
 async fn main() -> Result<(), AnyhowError> {
     use axum::Router;
-    use inferno::{app::*, cli::Cli, ServerState};
+    use inferno::{app::*, cli::Cli, ServerStateConfig};
     use leptos::logging::log;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use std::env;
 
-    #[cfg(feature = "ssr")]
     dotenv::dotenv().ok();
 
     // Create shared server state
@@ -22,7 +21,14 @@ async fn main() -> Result<(), AnyhowError> {
             std::process::exit(1);
         }
     };
-    let state = ServerState::new(&database_url).await?;
+
+    let mut config = ServerStateConfig::new().database_url(database_url);
+
+    if let Ok(key) = env::var("TOKEN_SIGNING_KEY") {
+        config = config.signing_key(key);
+    }
+
+    let state = config.build().await?;
 
     // try expose cli
     Cli::parse().run(&state).await;
