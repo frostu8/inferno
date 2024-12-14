@@ -70,17 +70,15 @@ pub async fn render_page(path: Slug) -> Result<RenderedPage, ServerFnError<ApiEr
                 | Options::ENABLE_WIKILINKS
                 | Options::ENABLE_SMART_PUNCTUATION,
         )
-        .map(|event| {
-            if let Event::Start(Tag::Link { dest_url, .. }) = &event {
+        .inspect(|event| {
+            if let Event::Start(Tag::Link { dest_url, .. }) = event {
                 // HACK kinda silly way to figure out if a url is relative
-                if let Err(_) = Url::parse(&dest_url) {
+                if Url::parse(dest_url).is_err() {
                     if let Ok(slug) = Slug::new(dest_url.clone()) {
                         slugs_to_resolve.insert(slug);
                     }
                 }
             }
-
-            event
         });
 
         let mut html_output = String::with_capacity(page.content.len() * 3 / 2);
