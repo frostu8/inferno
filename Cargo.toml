@@ -36,10 +36,15 @@ web-sys = { version = "=0.3.73", features = [
     "MouseEvent",
     "HtmlTextAreaElement",
 ] }
-pulldown-cmark = { version = "0.12.2", optional = true }
 ammonia = { version = "4.0.0", optional = true }
 diff-match-patch-rs = { version = "0.3.2", optional = true }
 url-escape = "0.1.1"
+url = { version = "2.5.4", optional = true }
+
+[dependencies.pulldown-cmark]
+git = "https://github.com/frostu8/pulldown-cmark"
+branch = "impl-wikilinks"
+optional = true
 
 [features]
 hydrate = ["leptos/hydrate"]
@@ -65,6 +70,7 @@ ssr = [
     "dep:pulldown-cmark",
     "dep:ammonia",
     "dep:diff-match-patch-rs",
+    "dep:url",
 ]
 
 # Defines a size-optimized profile for the WASM bundle in release mode
@@ -135,4 +141,4 @@ lib-default-features = false
 # The profile to use for the lib target when compiling for release
 #
 # Optional. Defaults to "release".
-lib-profile-release = "wasm-release"
+kib-profile-release = "wasm-release"

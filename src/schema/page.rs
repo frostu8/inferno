@@ -1,10 +1,15 @@
 //! Page information.
+//!
+//! The use of [`Slug`] in this module gaurantees that no bad accesses can be
+//! made.
 
 use base16::encode_lower;
 use chrono::Utc;
 use sqlx::{Executor, Postgres};
 
 use sha2::{Digest, Sha256};
+
+use crate::slug::Slug;
 
 /// Result of [`get_page_content`] and [`get_page_for_update`].
 #[derive(sqlx::FromRow)]
@@ -14,7 +19,7 @@ pub struct Page {
 }
 
 /// Gets the content of a page.
-pub async fn get_page_content<'c, E>(path: &str, db: E) -> Result<Option<Page>, sqlx::Error>
+pub async fn get_page_content<'c, E>(path: &Slug, db: E) -> Result<Option<Page>, sqlx::Error>
 where
     E: Executor<'c, Database = Postgres>,
 {
@@ -28,7 +33,7 @@ where
         LIMIT 1
         "#,
     )
-    .bind(path)
+    .bind(path.as_str())
     .fetch_optional(db)
     .await
 }
@@ -38,7 +43,7 @@ where
 /// This function sets up a lock for an update, as opposed to
 /// [`get_page_content`]. If you just want the page, use [`get_page_content`].
 pub async fn get_page_content_for_update<'c, E>(
-    path: &str,
+    path: &Slug,
     db: E,
 ) -> Result<Option<Page>, sqlx::Error>
 where
@@ -55,7 +60,7 @@ where
         FOR UPDATE
         "#,
     )
-    .bind(path)
+    .bind(path.as_str())
     .fetch_optional(db)
     .await
 }
@@ -64,7 +69,11 @@ where
 ///
 /// This does not log the diff, breaking diff operations; this function should
 /// typically be called in conjunction with [`save_change`].
-pub async fn update_page_content<'c, E>(path: &str, content: &str, db: E) -> Result<(), sqlx::Error>
+pub async fn update_page_content<'c, E>(
+    path: &Slug,
+    content: &str,
+    db: E,
+) -> Result<(), sqlx::Error>
 where
     E: Executor<'c, Database = Postgres>,
 {
@@ -80,7 +89,7 @@ where
             updated_at = excluded.updated_at
         "#,
     )
-    .bind(path)
+    .bind(path.as_str())
     .bind(content)
     .bind(updated_at)
     .execute(db)
@@ -93,7 +102,7 @@ where
 /// This does not actually modify the page; this function should typically be
 /// called in conjunction with [`update_page_content`].
 pub async fn save_change<'c, E>(
-    path: &str,
+    path: &Slug,
     author: &str,
     changes: &str,
     db: E,
@@ -107,7 +116,7 @@ where
     let mut hasher = Sha256::new();
 
     // also has the author, page path and time
-    hasher.update(path);
+    hasher.update(path.as_str());
     hasher.update(author);
     hasher.update(inserted_at.timestamp().to_le_bytes());
     // hash changes
@@ -127,7 +136,7 @@ where
             u.username = $2
         "#,
     )
-    .bind(path)
+    .bind(path.as_str())
     .bind(author)
     .bind(&hash)
     .bind(changes)
@@ -135,4 +144,43 @@ where
     .execute(db)
     .await
     .map(|_| hash)
+}
+
+/// Searches the database for a page with an exactly matching title. This
+/// returns the full path of the page, or `None` if nothing was found.
+///
+/// If multiple records match, as in a table with the pages `Index` and
+/// `About/Index`
+pub async fn expand_wikilink<'c, E>(link: &Slug, db: E) -> Result<Option<Slug>, sqlx::Error>
+where
+    E: Executor<'c, Database = Postgres>,
+{
+    let mut results = sqlx::query_as::<_, (String,)>(
+        r#"
+        SELECT path
+        FROM pages
+        WHERE
+            path = $1 OR
+            path LIKE CONCAT('%/', $1)
+        "#,
+    )
+    .bind(link.as_str())
+    .fetch_all(db)
+    .await?;
+
+    if results.len() < 2 {
+        Ok(results.pop().and_then(|r| Slug::new(r.0).ok()))
+    } else {
+        // disambiguate by exact match
+        if let Some(match_ix) = results.iter().position(|(path,)| path == link.as_str()) {
+            Ok(results
+                .drain(match_ix..)
+                .filter_map(|(link,)| Slug::new(link).ok())
+                .next())
+        } else {
+            // TODO other disambiguation? for now just return None so caller
+            // handles it
+            Ok(None)
+        }
+    }
 }

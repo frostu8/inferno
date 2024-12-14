@@ -3,6 +3,7 @@ pub mod app;
 pub mod components;
 pub mod error;
 pub mod page;
+pub mod slug;
 pub mod user;
 
 #[cfg(feature = "ssr")]
