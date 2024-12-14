@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 pub mod account;
 pub mod app;
 pub mod components;

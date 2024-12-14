@@ -14,5 +14,14 @@ some of the most extreme browsing environments (most notably
 [`lynx`](https://lynx.invisible-island.net/), because if the website can
 support `lynx` cleanly it can support **anything**).
 
-Check out a running instance at <https://inferno.frostu8.rs/>, but be gentle,
-please. This *is* your mama's server.
+Check out a running instance at <https://infernowiki.rs/>, but be gentle,
+please.
+
+## `#![forbid(unsafe_code)]`
+Unsafe code is forbidden. Classically and interestingly, many of the big day-0
+exploits happen because of simple oversights that would otherwise be
+bounds-checked by the compiler or at runtime.
+
+I expect `inferno` to grow along with the Rust ecosystem, which means I can
+expect to be pulling crates to do jobs that might be done with `unsafe` code
+that are battle-tested.

@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 #[cfg(feature = "ssr")]
 use anyhow::Error as AnyhowError;
 
