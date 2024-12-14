@@ -53,7 +53,7 @@ where
         let path = params
             .as_ref()
             .ok()
-            .and_then(|s| s.path.as_ref().map(|s| s.as_str()))
+            .and_then(|s| s.path.as_deref())
             .unwrap_or("");
 
         Slug::slugify(path)
@@ -66,7 +66,7 @@ where
             when=move || slug.with(|s| s.is_some())
             fallback=move || {
                 let path = redirect_path.get();
-                view! { <Redirect path/> }
+                view! { <Redirect path /> }
             }
         >
             {inner(slug_unwrap)}
@@ -77,9 +77,7 @@ where
 /// Renders a page as it appears on the main screen, using router parameters.
 #[component]
 pub fn Page() -> impl IntoView {
-    view! {
-        <ValidatePath inner=move |path| view! { <PageInner path/> } />
-    }
+    view! { <ValidatePath inner=move |path| view! { <PageInner path /> } /> }
 }
 
 #[component]
@@ -164,9 +162,7 @@ pub fn RenderPage(page: RenderedPage) -> impl IntoView {
 /// Provides an interface for editing a page.
 #[component]
 pub fn EditPage() -> impl IntoView {
-    view! {
-        <ValidatePath inner=move |path| view! { <EditPageInner path/> } />
-    }
+    view! { <ValidatePath inner=move |path| view! { <EditPageInner path /> } /> }
 }
 
 #[component]
@@ -213,12 +209,8 @@ fn EditPageInner(path: Signal<Slug>) -> impl IntoView {
 #[component]
 pub fn PageSubtitle(path: Signal<Slug>) -> impl IntoView {
     view! {
-        <Show
-            when=move || path.with(|p| p.parent().is_some())
-        >
-            <h1 class="subtitle">
-                {move || path.with(|p| p.parent().unwrap().to_owned())}
-            </h1>
+        <Show when=move || path.with(|p| p.parent().is_some())>
+            <h1 class="subtitle">{move || path.with(|p| p.parent().unwrap().to_owned())}</h1>
         </Show>
     }
 }

@@ -131,7 +131,7 @@ impl Slug {
 
     /// Gets the title of a slug by getting the last segment and replacing
     /// underscores with ASCII spaces.
-    pub fn title<'a>(&'a self) -> Cow<'a, str> {
+    pub fn title(&self) -> Cow<str> {
         let title = match self.as_str().rfind('/') {
             Some(idx) => &self.as_str()[idx + 1..],
             None => self.as_str(),
@@ -190,7 +190,7 @@ impl From<Slug> for String {
 
 impl Display for Slug {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.as_str())
+        f.write_str(self.as_str())
     }
 }
 
@@ -210,7 +210,7 @@ impl<'de> Deserialize<'de> for Slug {
     {
         let s = String::deserialize(deserializer)?;
 
-        Slug::new(s).map_err(|e| de::Error::custom(e))
+        Slug::new(s).map_err(de::Error::custom)
     }
 }
 
