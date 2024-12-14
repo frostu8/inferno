@@ -10,7 +10,7 @@ $fg-secondary-dark: #660000;
 $fg-accent: #FFF3B0;
 
 // different link color accessibility
-$fg-link: #EE8689;
+$fg-text-accent: #EE8689;
 
 @use "account/login";
 @use "sidebar";
@@ -67,11 +67,19 @@ main {
 	margin: 16px 0;
 }
 
+blockquote {
+	// use padding instead of margin for blockquote
+	margin-left: 0;
+	padding-left: 2.5em;
+
+	border-left: 4px solid $fg-text-accent;
+}
+
 a {
-	color: $fg-link;
+	color: $fg-text-accent;
 
 	&:visited {
-		color: $fg-link;
+		color: $fg-text-accent;
 	}
 }
 
