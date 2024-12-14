@@ -3,6 +3,7 @@
 use leptos::prelude::*;
 use leptos::server_fn::codec::GetUrl;
 
+use super::Slug;
 use crate::error::Error as ApiError;
 
 use serde::{Deserialize, Serialize};
@@ -10,6 +11,12 @@ use serde::{Deserialize, Serialize};
 /// The output of [`get_page_source`].
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PageSource {
+    /// The title of the page.
+    ///
+    /// See [`Page::title`].
+    ///
+    /// [`Page::title`]: crate::page::render::Page
+    pub title: String,
     /// The source content of the page.
     pub source: String,
     /// The latest change of the hash.
@@ -22,6 +29,7 @@ pub struct PageSource {
 impl Default for PageSource {
     fn default() -> Self {
         PageSource {
+            title: "".into(),
             source: "".into(),
             latest_change_hash: None,
         }
@@ -30,10 +38,12 @@ impl Default for PageSource {
 
 /// Fetches a page source.
 #[server(endpoint = "/page/source", input = GetUrl)]
-pub async fn get_page_source(path: String) -> Result<PageSource, ServerFnError<ApiError>> {
+pub async fn get_page_source(path: Slug) -> Result<PageSource, ServerFnError<ApiError>> {
     use crate::{account::extract_token, schema::page::get_page_content, ServerState};
 
     let state = expect_context::<ServerState>();
+
+    let title = path.title().into();
 
     // edits MUST be attributed
     let _token = extract_token().await?;
@@ -44,13 +54,17 @@ pub async fn get_page_source(path: String) -> Result<PageSource, ServerFnError<A
 
     if let Some(page) = page {
         Ok(PageSource {
+            title,
             source: page.content,
             latest_change_hash: Some(page.latest_change_hash),
         })
     } else {
         // user is trying to create page
         // send default page source as if it did exist
-        Ok(PageSource::default())
+        Ok(PageSource {
+            title,
+            ..PageSource::default()
+        })
     }
 }
 
@@ -66,7 +80,7 @@ pub struct ChangeResult {
 /// Creates or updates a new page.
 #[server(endpoint = "/page/source")]
 pub async fn push_page_changes(
-    path: String,
+    path: Slug,
     latest_change_hash: String,
     source: String,
 ) -> Result<ChangeResult, ServerFnError<ApiError>> {
@@ -96,8 +110,10 @@ pub async fn push_page_changes(
         .await
         .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
 
-    if old_page.as_ref().map(|c| &c.latest_change_hash) != Some(&latest_change_hash) {
-        return Err(ApiError::from_code(error::PAGE_ALREADY_CHANGED).into());
+    if let Some(last_change) = old_page.as_ref().map(|c| &c.latest_change_hash) {
+        if *last_change != latest_change_hash {
+            return Err(ApiError::from_code(error::PAGE_ALREADY_CHANGED).into());
+        }
     }
 
     if old_page.as_ref().map(|c| &c.content) == Some(&source) {

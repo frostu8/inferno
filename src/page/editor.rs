@@ -6,6 +6,7 @@ use wasm_bindgen::prelude::*;
 
 use web_sys::HtmlTextAreaElement;
 
+use super::Slug;
 use crate::page::edit::{PageSource, PushPageChanges};
 
 /// The page editor.
@@ -15,8 +16,10 @@ use crate::page::edit::{PageSource, PushPageChanges};
 /// `initial_content`, which means the content of the page may change, but the
 /// initial content will not.
 #[component]
-pub fn PageEditor(path: Signal<String>, page: PageSource) -> impl IntoView {
+pub fn PageEditor(path: Signal<Slug>, page: PageSource) -> impl IntoView {
     let textarea_ref = NodeRef::<Textarea>::new();
+
+    let path = Memo::new(move |_| path.get().as_str().to_owned());
 
     let (last_hash, set_last_hash) = signal(page.latest_change_hash);
 
@@ -46,6 +49,7 @@ pub fn PageEditor(path: Signal<String>, page: PageSource) -> impl IntoView {
     });
 
     view! {
+        <h1 class="title">"Editing " {page.title}</h1>
         <ActionForm attr:class="editor" action=push_page_changes>
             // TODO: error modals
             <Show when=move || push_page_changes.value().with(|c| matches!(c, Some(Err(_))))>

@@ -7,6 +7,7 @@
 use leptos::prelude::*;
 use leptos::server_fn::codec::GetUrl;
 
+use super::Slug;
 use crate::error::Error as ApiError;
 
 use serde::{Deserialize, Serialize};
@@ -27,11 +28,13 @@ pub struct RenderedPage {
 
 /// The main page rendering endpoint.
 #[server(endpoint = "/page", input = GetUrl)]
-pub async fn render_page(path: String) -> Result<RenderedPage, ServerFnError<ApiError>> {
+pub async fn render_page(path: Slug) -> Result<RenderedPage, ServerFnError<ApiError>> {
     use crate::{account::extract_token, error, schema::page::get_page_content, ServerState};
     use ammonia::{Builder, UrlRelative};
-    use pulldown_cmark::{html, Parser};
+    use pulldown_cmark::{html, Event, LinkType, Options, Parser, Tag};
     use std::collections::HashSet;
+
+    const WIKI_PREFIX: &str = "/~";
 
     let state = expect_context::<ServerState>();
 
@@ -43,12 +46,37 @@ pub async fn render_page(path: String) -> Result<RenderedPage, ServerFnError<Api
         .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
 
     if let Some(page) = page {
-        let title = match path.rfind('/') {
-            Some(idx) => path[idx + 1..].trim(),
-            None => path.trim(),
-        };
+        let title = path.title();
 
-        let parser = Parser::new(&page.content);
+        let parser = Parser::new_ext(
+            &page.content,
+            Options::ENABLE_FOOTNOTES
+                | Options::ENABLE_TABLES
+                | Options::ENABLE_WIKILINKS
+                | Options::ENABLE_SMART_PUNCTUATION,
+        )
+        .map(|event| {
+            if let Event::Start(Tag::Link {
+                link_type: LinkType::WikiLink,
+                dest_url,
+                title,
+                id,
+            }) = event
+            {
+                // prefix wikilink
+                let mut new_link = String::with_capacity(WIKI_PREFIX.len() + dest_url.len());
+                new_link.push_str(WIKI_PREFIX);
+                new_link.push_str(&dest_url);
+                Event::Start(Tag::Link {
+                    link_type: LinkType::WikiLink,
+                    dest_url: new_link.into(),
+                    title,
+                    id,
+                })
+            } else {
+                event
+            }
+        });
 
         let mut html_output = String::with_capacity(page.content.len() * 3 / 2);
         html::push_html(&mut html_output, parser);
