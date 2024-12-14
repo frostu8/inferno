@@ -21,13 +21,13 @@ use serde::{
 ///
 /// The slug cannot also begin or end with underscores.
 ///
-/// ## Leading slash
-/// It is okay for the slug to have a leading slash, but it will be treated the
-/// same as without one. That is to say;
+/// ## Leading/Trailing slash
+/// It is okay for the slug to have a leading or trailing slash, but it will be
+/// treated the same as without one. That is to say;
 ///
 /// ```
 /// # use inferno::slug::Slug;
-/// let slug1 = Slug::new("Index/");
+/// let slug1 = Slug::new("/Index/");
 /// let slug2 = Slug::new("Index");
 ///
 /// assert_eq!(slug1, slug2);
@@ -116,6 +116,11 @@ impl Slug {
         Slug::new(out)
     }
 
+    /// Joins two slugs together by a '/'.
+    pub fn join(&self, other: &Slug) -> Slug {
+        Slug::new(format!("{}/{}", self.as_str(), other.as_str())).unwrap()
+    }
+
     /// Returns a substring of the slug that indicates its parent directory.
     ///
     /// Returns `None` if it is on the base directory. The result is also
@@ -156,10 +161,11 @@ impl Slug {
 
     /// Gets a reference to the str inside.
     pub fn as_str(&self) -> &str {
-        if let Some(inner) = self.0.strip_suffix('/') {
-            inner
-        } else {
-            &self.0
+        match (self.0.starts_with('/'), self.0.ends_with('/')) {
+            (false, false) => &self.0,
+            (true, false) => &self.0[1..],
+            (false, true) => &self.0[..(self.0.len() - 1)],
+            (true, true) => &self.0[1..(self.0.len() - 1)],
         }
     }
 
