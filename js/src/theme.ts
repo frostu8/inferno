@@ -5,6 +5,7 @@ import {tags as t} from "@lezer/highlight"
 
 const background = "#001b29",
   cursor = "#FAC7CA",
+  selection = "#669bbc",
   highlightBackground = "#001B29",
   lavender = "#A0A0CF",
   awesomeYellow = "#fff3b0",
@@ -17,9 +18,10 @@ const infernoBaseTheme: Extension = EditorView.theme({
     backgroundColor: background
   },
   ".cm-cursor, .cm-dropCursor": {borderLeftColor: cursor},
+  "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground": {backgroundColor: selection},
   ".cm-activeLine": {
     //backgroundColor: "#001F3D",
-    backgroundColor: background
+    //backgroundColor: selection
   },
   ".cm-gutters": {
     backgroundColor: "#000d14",
@@ -66,6 +68,6 @@ const infernoHighlightStyle = HighlightStyle.define([
    color: lavender},
   {tag: t.invalid,
    color: rose},
-]);
+], {themeType: "dark"});
 
 export const infernoTheme: Extension = [infernoBaseTheme, syntaxHighlighting(infernoHighlightStyle)];
