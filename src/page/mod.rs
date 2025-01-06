@@ -5,7 +5,7 @@
 
 pub mod edit;
 pub mod editor;
-pub mod render;
+pub mod view;
 
 pub use crate::slug::Slug;
 
@@ -20,7 +20,7 @@ use leptos_router::{
 
 use edit::get_page_source;
 use editor::PageEditor;
-use render::{render_page, RenderedPage};
+use view::{render_page, RenderedPage};
 
 use crate::components::{Sidebar, SidebarItem};
 

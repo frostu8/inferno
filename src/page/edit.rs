@@ -84,13 +84,19 @@ pub async fn push_page_changes(
     latest_change_hash: String,
     source: String,
 ) -> Result<ChangeResult, ServerFnError<ApiError>> {
+    use super::view::markdown;
     use crate::{
         account::extract_token,
         error,
-        schema::page::{get_page_content_for_update, save_change, update_page_content},
+        schema::page::{
+            deregister_link, establish_link, get_links_from, get_page_content_for_update,
+            save_change, update_page_content,
+        },
         ServerState,
     };
     use diff_match_patch_rs::{Compat, DiffMatchPatch, PatchInput};
+    use pulldown_cmark::{Event, Tag};
+    use std::collections::HashSet;
 
     // attribute edits on the given token
     let token = extract_token().await?;
@@ -138,6 +144,44 @@ pub async fn push_page_changes(
     update_page_content(&path, &source, &mut *tx)
         .await
         .map_err(|e| ServerFnError::ServerError(format!("{:?}", e)))?;
+
+    // get links in source
+    let old_links = get_links_from(&path, &mut *tx)
+        .await
+        .map_err(|e| ServerFnError::ServerError(format!("{:?}", e)))?
+        .into_iter()
+        .collect::<HashSet<Slug>>();
+    let mut links = HashSet::<Slug>::new();
+
+    for event in markdown::parse(&source) {
+        if let Event::Start(Tag::Link { dest_url, .. }) = event {
+            if !markdown::is_uri_absolute(&dest_url) {
+                // wikilinks are normalized by markdown::parse, so
+                // un-normalize them here
+                if let Ok(slug) = Slug::new(dest_url.trim_matches('/')) {
+                    links.insert(slug);
+                }
+            }
+        }
+    }
+
+    for link in links.iter() {
+        // if link is missing, add it
+        if !old_links.contains(link) {
+            establish_link(&path, link, &mut *tx)
+                .await
+                .map_err(|e| ServerFnError::ServerError(format!("{:?}", e)))?;
+        }
+    }
+
+    for link in old_links.iter() {
+        // if link is now missing, remove it
+        if !links.contains(link) {
+            deregister_link(&path, link, &mut *tx)
+                .await
+                .map_err(|e| ServerFnError::ServerError(format!("{:?}", e)))?;
+        }
+    }
 
     // add change to db
     let hash = save_change(&path, &token.sub, &changes, &mut *tx)
