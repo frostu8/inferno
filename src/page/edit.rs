@@ -168,7 +168,7 @@ pub async fn push_page_changes(
     for link in links.iter() {
         // if link is missing, add it
         if !old_links.contains(link) {
-            establish_link(&path, &link, &mut *tx)
+            establish_link(&path, link, &mut *tx)
                 .await
                 .map_err(|e| ServerFnError::ServerError(format!("{:?}", e)))?;
         }
@@ -177,7 +177,7 @@ pub async fn push_page_changes(
     for link in old_links.iter() {
         // if link is now missing, remove it
         if !links.contains(link) {
-            deregister_link(&path, &link, &mut *tx)
+            deregister_link(&path, link, &mut *tx)
                 .await
                 .map_err(|e| ServerFnError::ServerError(format!("{:?}", e)))?;
         }

@@ -4,9 +4,9 @@ use pulldown_cmark::{CowStr, Event, Event::*, LinkType, Options, Parser, Tag};
 use regex::RegexBuilder;
 
 /// Creates a Markdown token stream from content.
-pub fn parse<'a>(content: &'a str) -> impl Iterator<Item = Event<'a>> {
+pub fn parse(content: &str) -> impl Iterator<Item = Event> {
     Parser::new_ext(
-        &content,
+        content,
         Options::ENABLE_FOOTNOTES
             | Options::ENABLE_TABLES
             | Options::ENABLE_WIKILINKS
