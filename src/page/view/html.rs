@@ -5,24 +5,18 @@ use ammonia::{Builder, UrlRelative};
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use regex::RegexBuilder;
-
 use pulldown_cmark::{
-    Alignment, BlockQuoteKind, CodeBlockKind, CowStr, Event, Event::*, LinkType, Options, Parser,
-    Tag, TagEnd,
+    Alignment, BlockQuoteKind, CodeBlockKind, CowStr, Event, Event::*, LinkType, Tag, TagEnd,
 };
 use pulldown_cmark_escape::{escape_href, escape_html, escape_html_body_text, FmtWriter, StrWrite};
 
 /// Renders a markdown page as HTML.
-pub fn to_html(content: &str) -> String {
-    let parser = Parser::new_ext(
-        &content,
-        Options::ENABLE_FOOTNOTES
-            | Options::ENABLE_TABLES
-            | Options::ENABLE_WIKILINKS
-            | Options::ENABLE_SMART_PUNCTUATION,
-    )
-    .map(|event| {
+pub fn to_html<'a, I>(stream: I, size_hint: Option<usize>) -> String
+where
+    I: Iterator<Item = Event<'a>>,
+{
+    // prefix local wikilinks
+    let stream = stream.map(|event| {
         if let Start(Tag::Link {
             link_type: LinkType::WikiLink,
             dest_url,
@@ -30,9 +24,15 @@ pub fn to_html(content: &str) -> String {
             id,
         }) = event
         {
+            let dest_url = if super::markdown::is_uri_absolute(&dest_url) {
+                dest_url
+            } else {
+                format!("/~{}", dest_url).into()
+            };
+
             Start(Tag::Link {
                 link_type: LinkType::WikiLink,
-                dest_url: normalize_wikilink(dest_url),
+                dest_url,
                 title,
                 id,
             })
@@ -41,8 +41,12 @@ pub fn to_html(content: &str) -> String {
         }
     });
 
-    let mut html_output = String::with_capacity(content.len() * 3 / 2);
-    let _ = HtmlWriter::new(parser, FmtWriter(&mut html_output)).run();
+    let mut html_output = if let Some(size_hint) = size_hint {
+        String::with_capacity(size_hint * 3 / 2)
+    } else {
+        String::new()
+    };
+    let _ = HtmlWriter::new(stream, FmtWriter(&mut html_output)).run();
 
     // cleans after Markdown to prevent any nasty expansion tricks
     let mut generic_attributes = HashSet::new();
@@ -54,58 +58,6 @@ pub fn to_html(content: &str) -> String {
         .url_relative(UrlRelative::PassThrough)
         .clean(&html_output)
         .to_string()
-}
-
-fn normalize_wikilink(link: CowStr) -> CowStr {
-    const WIKI_PREFIX: &str = "/~";
-
-    if is_uri_absolute(&link) {
-        return link;
-    }
-
-    if link.is_empty() {
-        return link;
-    }
-
-    let mut result = String::with_capacity(link.len() + 2);
-    let mut i = 0;
-    let mut mark = 0;
-    let mut in_whitespace = false;
-
-    result.push_str(WIKI_PREFIX);
-
-    if !link.starts_with('/') {
-        result.push('/');
-    }
-
-    while i < link.len() {
-        if !in_whitespace && link.as_bytes()[i].is_ascii_whitespace() {
-            in_whitespace = true;
-            result.push_str(&link[mark..i]);
-            result.push('_');
-        } else if in_whitespace && !link.as_bytes()[i].is_ascii_whitespace() {
-            mark = i;
-            in_whitespace = false;
-        }
-
-        i += 1;
-    }
-
-    result.push_str(&link[mark..]);
-    if !link.ends_with('/') {
-        result.push('/');
-    }
-    result.into()
-}
-
-fn is_uri_absolute(uri: &str) -> bool {
-    // check if the link is absolute, if it is, return as is
-    // according to RFC 3986; https://www.rfc-editor.org/rfc/rfc3986
-    RegexBuilder::new("^(?:[a-z+\\-.]+:)?//")
-        .case_insensitive(true)
-        .build()
-        .expect("valid regex")
-        .is_match(uri)
 }
 
 // Htmlwriter shamelessly stolen from

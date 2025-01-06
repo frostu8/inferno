@@ -5,7 +5,9 @@
 //! parse pages.
 
 #[cfg(feature = "ssr")]
-mod render;
+mod html;
+#[cfg(feature = "ssr")]
+pub mod markdown;
 
 use leptos::prelude::*;
 use leptos::server_fn::codec::GetUrl;
@@ -45,7 +47,8 @@ pub async fn render_page(path: Slug) -> Result<RenderedPage, ServerFnError<ApiEr
 
     if let Some(page) = page {
         let title = path.title();
-        let html_output = render::to_html(&page.content);
+        let events = markdown::parse(&page.content);
+        let html_output = html::to_html(events, Some(page.content.len()));
 
         Ok(RenderedPage {
             title: title.into(),
