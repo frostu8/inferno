@@ -12,6 +12,9 @@ use crate::error::Error as ApiError;
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ssr")]
+use pulldown_cmark::CowStr;
+
 /// The output of [`render_page`].
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RenderedPage {
@@ -33,8 +36,6 @@ pub async fn render_page(path: Slug) -> Result<RenderedPage, ServerFnError<ApiEr
     use ammonia::{Builder, UrlRelative};
     use pulldown_cmark::{html, Event, LinkType, Options, Parser, Tag};
     use std::collections::HashSet;
-
-    const WIKI_PREFIX: &str = "/~";
 
     let state = expect_context::<ServerState>();
 
@@ -63,13 +64,9 @@ pub async fn render_page(path: Slug) -> Result<RenderedPage, ServerFnError<ApiEr
                 id,
             }) = event
             {
-                // prefix wikilink
-                let mut new_link = String::with_capacity(WIKI_PREFIX.len() + dest_url.len());
-                new_link.push_str(WIKI_PREFIX);
-                new_link.push_str(&dest_url);
                 Event::Start(Tag::Link {
                     link_type: LinkType::WikiLink,
-                    dest_url: new_link.into(),
+                    dest_url: normalize_wikilink(dest_url),
                     title,
                     id,
                 })
@@ -104,4 +101,56 @@ pub async fn render_page(path: Slug) -> Result<RenderedPage, ServerFnError<ApiEr
     } else {
         Err(ApiError::from_code(error::NOT_FOUND).into())
     }
+}
+
+#[cfg(feature = "ssr")]
+fn normalize_wikilink(link: CowStr) -> CowStr {
+    use regex::RegexBuilder;
+
+    const WIKI_PREFIX: &str = "/~";
+
+    if link.is_empty() {
+        return link;
+    }
+
+    // check if the link is absolute, if it is, return as is
+    // according to RFC 3986; https://www.rfc-editor.org/rfc/rfc3986
+    let is_absolute = RegexBuilder::new("^(?:[a-z+\\-.]+:)?//")
+        .case_insensitive(true)
+        .build()
+        .expect("valid regex");
+
+    if is_absolute.is_match(&link) {
+        return link;
+    }
+
+    let mut result = String::with_capacity(link.len() + 2);
+    let mut i = 0;
+    let mut mark = 0;
+    let mut in_whitespace = false;
+
+    result.push_str(WIKI_PREFIX);
+
+    if !link.starts_with('/') {
+        result.push('/');
+    }
+
+    while i < link.len() {
+        if !in_whitespace && link.as_bytes()[i].is_ascii_whitespace() {
+            in_whitespace = true;
+            result.push_str(&link[mark..i]);
+            result.push('_');
+        } else if in_whitespace && !link.as_bytes()[i].is_ascii_whitespace() {
+            mark = i;
+            in_whitespace = false;
+        }
+
+        i += 1;
+    }
+
+    result.push_str(&link[mark..]);
+    if !link.ends_with('/') {
+        result.push('/');
+    }
+    result.into()
 }

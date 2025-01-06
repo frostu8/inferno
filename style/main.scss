@@ -191,3 +191,14 @@ input[type="password"] {
 		color: $fg-primary;
 	}
 }
+
+blockquote {
+	margin-left: 0;
+	padding-left: 32px;
+	border-left: 2px solid $fg-primary;
+}
+
+// for pulldown-cmark
+.footnote-definition p {
+	display: inline;
+}
