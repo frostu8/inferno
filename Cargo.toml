@@ -47,6 +47,11 @@ git = "https://github.com/frostu8/pulldown-cmark"
 branch = "impl-wikilinks"
 optional = true
 
+[dependencies.pulldown-cmark-escape]
+git = "https://github.com/frostu8/pulldown-cmark"
+branch = "impl-wikilinks"
+optional = true
+
 [features]
 hydrate = ["leptos/hydrate"]
 ssr = [
@@ -69,6 +74,7 @@ ssr = [
     "dep:dotenv",
     "dep:clap",
     "dep:pulldown-cmark",
+    "dep:pulldown-cmark-escape",
     "dep:ammonia",
     "dep:diff-match-patch-rs",
     "dep:url",
