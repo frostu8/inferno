@@ -88,7 +88,9 @@ impl Slug {
             prev_ch = Some(ch);
         }
 
-        Ok(Slug(s.into_owned()))
+        // Trim slashes inside of slug so slugs never make it to the database
+        // with them in.
+        Ok(Slug(s.trim_matches('/').to_owned()))
     }
 
     /// Converts a plain string into a `Slug` by converting it via simple

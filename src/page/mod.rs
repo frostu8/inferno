@@ -22,6 +22,8 @@ use edit::get_page_source;
 use editor::PageEditor;
 use view::{render_page, RenderedPage};
 
+use std::borrow::Cow;
+
 use crate::components::{Sidebar, SidebarItem};
 
 #[derive(Debug, Params, PartialEq)]
@@ -212,5 +214,136 @@ pub fn PageSubtitle(path: Signal<Slug>) -> impl IntoView {
         <Show when=move || path.with(|p| p.parent().is_some())>
             <h1 class="subtitle">{move || path.with(|p| p.parent().unwrap().to_owned())}</h1>
         </Show>
+    }
+}
+
+/// Checks if a URI is absolute.
+pub fn is_uri_absolute(uri: &str) -> bool {
+    use regex::RegexBuilder;
+    // check if the link is absolute, if it is, return as is
+    // according to RFC 3986; https://www.rfc-editor.org/rfc/rfc3986
+    RegexBuilder::new("^(?:[a-z][a-z0-9+\\-.]*:)?//")
+        .case_insensitive(true)
+        .build()
+        .expect("valid regex")
+        .is_match(uri)
+}
+
+/// Normalizes wikilinks.
+pub fn normalize_wikilink<'a, T>(link: T) -> Cow<'a, str>
+where
+    T: Into<Cow<'a, str>>,
+{
+    let mut link = link.into();
+
+    if is_uri_absolute(&link) {
+        return link;
+    }
+
+    // fix fragment here
+    if let Some(idx) = link.rfind('#') {
+        let normalized = normalize_heading_id(&link[idx + 1..]);
+        link = format!("{}#{}", &link[..idx], normalized).into();
+    }
+
+    if link.starts_with('#') {
+        return link;
+    }
+
+    if link.is_empty() {
+        return link;
+    }
+
+    let mut result = String::with_capacity(link.len() + 2);
+    let mut i = 0;
+    let mut mark = 0;
+    let mut in_whitespace = false;
+
+    if !link.starts_with('/') {
+        result.push('/');
+    }
+
+    while i < link.len() {
+        if !in_whitespace && link.as_bytes()[i].is_ascii_whitespace() {
+            in_whitespace = true;
+            result.push_str(&link[mark..i]);
+        } else if in_whitespace && !link.as_bytes()[i].is_ascii_whitespace() {
+            result.push('_');
+            mark = i;
+            in_whitespace = false;
+        }
+
+        i += 1;
+    }
+
+    if !in_whitespace {
+        result.push_str(&link[mark..]);
+    }
+    if !link.ends_with('/') {
+        result.push('/');
+    }
+    result.into()
+}
+
+/// Normalizes heading IDs.
+pub fn normalize_heading_id<'a, T>(id: T) -> Cow<'a, str>
+where
+    T: Into<Cow<'a, str>>,
+{
+    let id = id.into();
+
+    if id.is_empty() {
+        return id;
+    }
+
+    let mut result = String::with_capacity(id.len());
+    let mut i = 0;
+    let mut mark = 0;
+    let mut in_whitespace = false;
+
+    while i < id.len() {
+        let ch = id[i..].chars().next().unwrap();
+
+        if !in_whitespace && !ch.is_alphanumeric() {
+            in_whitespace = true;
+            result.push_str(&id[mark..i]);
+        } else if in_whitespace && !ch.is_whitespace() {
+            result.push('-');
+            mark = i;
+            in_whitespace = false;
+        }
+
+        if ch.is_ascii_uppercase() {
+            result.push_str(&id[mark..i]);
+            result.push(ch.to_ascii_lowercase());
+            mark = i + ch.len_utf8();
+        }
+
+        i += ch.len_utf8();
+    }
+
+    if result.is_empty() {
+        id
+    } else {
+        if !in_whitespace {
+            result.push_str(&id[mark..]);
+        }
+        result.into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_normalize_heading_id() {
+        assert_eq!(&normalize_heading_id("The Heading"), "the-heading");
+        assert_eq!(
+            &normalize_heading_id("pepperoni-secret"),
+            "pepperoni-secret"
+        );
+
+        assert_eq!(&normalize_heading_id("Hi There!"), "hi-there");
     }
 }
