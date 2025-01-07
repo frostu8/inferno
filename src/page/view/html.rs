@@ -5,48 +5,24 @@ use ammonia::{Builder, UrlRelative};
 use std::collections::HashMap;
 use std::collections::HashSet;
 
+use super::Slug;
+
 use pulldown_cmark::{
     Alignment, BlockQuoteKind, CodeBlockKind, CowStr, Event, Event::*, LinkType, Tag, TagEnd,
 };
 use pulldown_cmark_escape::{escape_href, escape_html, escape_html_body_text, FmtWriter, StrWrite};
 
 /// Renders a markdown page as HTML.
-pub fn to_html<'a, I>(stream: I, size_hint: Option<usize>) -> String
+pub fn to_html<'a, I>(stream: I, resolved_links: HashSet<Slug>, size_hint: Option<usize>) -> String
 where
     I: Iterator<Item = Event<'a>>,
 {
-    // prefix local wikilinks
-    let stream = stream.map(|event| {
-        if let Start(Tag::Link {
-            link_type: LinkType::WikiLink,
-            dest_url,
-            title,
-            id,
-        }) = event
-        {
-            let dest_url = if super::markdown::is_uri_absolute(&dest_url) {
-                dest_url
-            } else {
-                format!("/~{}", dest_url).into()
-            };
-
-            Start(Tag::Link {
-                link_type: LinkType::WikiLink,
-                dest_url,
-                title,
-                id,
-            })
-        } else {
-            event
-        }
-    });
-
     let mut html_output = if let Some(size_hint) = size_hint {
         String::with_capacity(size_hint * 3 / 2)
     } else {
         String::new()
     };
-    let _ = HtmlWriter::new(stream, FmtWriter(&mut html_output)).run();
+    let _ = HtmlWriter::new(stream, FmtWriter(&mut html_output), resolved_links).run();
 
     // cleans after Markdown to prevent any nasty expansion tricks
     let mut generic_attributes = HashSet::new();
@@ -75,6 +51,9 @@ struct HtmlWriter<'a, I, W> {
     /// Writer to write to.
     writer: W,
 
+    /// The links resolved in the prepass
+    resolved_links: HashSet<Slug>,
+
     /// Whether or not the last write wrote a newline.
     end_newline: bool,
 
@@ -92,10 +71,11 @@ where
     I: Iterator<Item = Event<'a>>,
     W: StrWrite,
 {
-    fn new(iter: I, writer: W) -> Self {
+    fn new(iter: I, writer: W, resolved_links: HashSet<Slug>) -> Self {
         Self {
             iter,
             writer,
+            resolved_links,
             end_newline: true,
             in_non_writing_block: false,
             table_state: TableState::Head,
@@ -386,7 +366,14 @@ where
                     self.write("\" title=\"")?;
                     escape_html(&mut self.writer, &title)?;
                 }
-                self.write("\">")
+                self.write("\"")?;
+                if Slug::new(dest_url.trim_matches('/'))
+                    .map(|s| !self.resolved_links.contains(&s))
+                    .unwrap_or(true)
+                {
+                    self.write(" class=\"noexist\"")?;
+                }
+                self.write(">")
             }
             Tag::Image {
                 link_type: _,
