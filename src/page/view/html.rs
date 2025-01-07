@@ -367,9 +367,10 @@ where
                     escape_html(&mut self.writer, &title)?;
                 }
                 self.write("\"")?;
-                if Slug::new(dest_url.trim_matches('/'))
-                    .map(|s| !self.resolved_links.contains(&s))
-                    .unwrap_or(true)
+                if !super::markdown::is_uri_absolute(&dest_url)
+                    && Slug::new(dest_url.trim_matches('/'))
+                        .map(|s| !self.resolved_links.contains(&s))
+                        .unwrap_or(true)
                 {
                     self.write(" class=\"noexist\"")?;
                 }
