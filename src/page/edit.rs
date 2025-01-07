@@ -84,7 +84,7 @@ pub async fn push_page_changes(
     latest_change_hash: String,
     source: String,
 ) -> Result<ChangeResult, ServerFnError<ApiError>> {
-    use super::view::markdown;
+    use super::{is_uri_absolute, view::markdown};
     use crate::{
         account::extract_token,
         error,
@@ -155,7 +155,7 @@ pub async fn push_page_changes(
 
     for event in markdown::parse(&source) {
         if let Event::Start(Tag::Link { dest_url, .. }) = event {
-            if !markdown::is_uri_absolute(&dest_url) {
+            if !is_uri_absolute(&dest_url) {
                 // wikilinks are normalized by markdown::parse, so
                 // un-normalize them here
                 if let Ok(slug) = Slug::new(dest_url.trim_matches('/')) {

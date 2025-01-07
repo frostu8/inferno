@@ -5,7 +5,8 @@ use ammonia::{Builder, UrlRelative};
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use super::Slug;
+use crate::page::is_uri_absolute;
+use crate::slug::Slug;
 
 use pulldown_cmark::{
     Alignment, BlockQuoteKind, CodeBlockKind, CowStr, Event, Event::*, LinkType, Tag, TagEnd,
@@ -27,6 +28,7 @@ where
     // cleans after Markdown to prevent any nasty expansion tricks
     let mut generic_attributes = HashSet::new();
     generic_attributes.insert("class");
+    generic_attributes.insert("id");
 
     Builder::default()
         .generic_attributes(generic_attributes)
@@ -360,9 +362,11 @@ where
                 title,
                 id: _,
             } => {
-                let is_absolute = super::markdown::is_uri_absolute(&dest_url);
+                let is_top_relative = dest_url.starts_with('/');
+                let is_fragment = dest_url.starts_with('#');
+                let is_absolute = is_uri_absolute(&dest_url);
                 self.write("<a href=\"")?;
-                if !is_absolute {
+                if !is_absolute && !is_fragment && is_top_relative {
                     self.write("/~")?;
                 }
                 escape_href(&mut self.writer, &dest_url)?;
@@ -372,6 +376,7 @@ where
                 }
                 self.write("\"")?;
                 if !is_absolute
+                    && !is_fragment
                     && Slug::new(dest_url.trim_matches('/'))
                         .map(|s| !self.resolved_links.contains(&s))
                         .unwrap_or(true)
