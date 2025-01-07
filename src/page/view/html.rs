@@ -360,14 +360,18 @@ where
                 title,
                 id: _,
             } => {
+                let is_absolute = super::markdown::is_uri_absolute(&dest_url);
                 self.write("<a href=\"")?;
+                if !is_absolute {
+                    self.write("/~")?;
+                }
                 escape_href(&mut self.writer, &dest_url)?;
                 if !title.is_empty() {
                     self.write("\" title=\"")?;
                     escape_html(&mut self.writer, &title)?;
                 }
                 self.write("\"")?;
-                if !super::markdown::is_uri_absolute(&dest_url)
+                if !is_absolute
                     && Slug::new(dest_url.trim_matches('/'))
                         .map(|s| !self.resolved_links.contains(&s))
                         .unwrap_or(true)
