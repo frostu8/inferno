@@ -34,7 +34,13 @@ pub struct RenderedPage {
 /// The main page rendering endpoint.
 #[server(endpoint = "/page", input = GetUrl)]
 pub async fn render_page(path: Slug) -> Result<RenderedPage, ServerFnError<ApiError>> {
-    use crate::{account::extract_token, error, schema::page::get_page_content, ServerState};
+    use crate::{
+        account::extract_token,
+        error,
+        schema::page::{get_existing_links_from, get_page_content},
+        ServerState,
+    };
+    use std::collections::HashSet;
 
     let state = expect_context::<ServerState>();
 
@@ -45,10 +51,16 @@ pub async fn render_page(path: Slug) -> Result<RenderedPage, ServerFnError<ApiEr
         .await
         .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
 
+    let links = get_existing_links_from(&path, &state.pool)
+        .await
+        .map_err(|e| ServerFnError::ServerError(e.to_string()))?
+        .into_iter()
+        .collect::<HashSet<Slug>>();
+
     if let Some(page) = page {
         let title = path.title();
         let events = markdown::parse(&page.content);
-        let html_output = html::to_html(events, Some(page.content.len()));
+        let html_output = html::to_html(events, links, Some(page.content.len()));
 
         Ok(RenderedPage {
             title: title.into(),

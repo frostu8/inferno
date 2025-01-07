@@ -170,6 +170,32 @@ where
     })
 }
 
+/// Gets all the links registered in the database from a page, filtering only
+/// the ones that exist
+pub async fn get_existing_links_from<'c, E>(path: &Slug, db: E) -> Result<Vec<Slug>, sqlx::Error>
+where
+    E: Executor<'c, Database = Postgres>,
+{
+    sqlx::query_as::<_, (String,)>(
+        r#"
+        SELECT l.dest_path
+        FROM pages p
+        RIGHT JOIN links l ON p.id = l.source_id
+        JOIN pages p2 ON p2.path = l.dest_path
+        WHERE p.path = $1
+        "#,
+    )
+    .bind(path.as_str())
+    .fetch_all(db)
+    .await
+    .map(|inner| {
+        inner
+            .into_iter()
+            .filter_map(|(s,)| Slug::new(s).ok())
+            .collect()
+    })
+}
+
 /// Adds a new relational link.
 pub async fn establish_link<'c, E>(from: &Slug, to: &Slug, db: E) -> Result<(), sqlx::Error>
 where

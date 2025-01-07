@@ -11,6 +11,7 @@ $fg-accent: #FFF3B0;
 
 // different link color accessibility
 $fg-text-accent: #EE8689;
+$fg-link-noexist: #AA88A2;
 
 @use "account/login";
 @use "sidebar";
@@ -209,4 +210,8 @@ blockquote {
 // for pulldown-cmark
 .footnote-definition p {
 	display: inline;
+}
+
+a.noexist {
+	color: $fg-link-noexist;
 }
