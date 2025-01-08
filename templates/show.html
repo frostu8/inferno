@@ -1,0 +1,17 @@
+{% extends "shell.html" %}
+
+{% block head %}
+  <title>{{ page.title }}</title>
+{% endblock %}
+
+{% block body %}
+  <div class="view-content">
+    <main>
+      <h1 class="title">{{ page.title }}</h1>
+      <hr>
+      <div class="page-content">
+        {{ page.content_clean|safe }}
+      </div>
+    </main>
+  </div>
+{% endblock %}

@@ -5,12 +5,21 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+# Generic HTTP libraries
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-error = "0.2"
-warp = "0.3"
+axum = { version = "0.8", features = ["macros"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["fs", "trace"] }
 http = "1"
+
+# HTML templating and rendering
+askama = "0.12"
+ammonia = "4"
+
+# For config
 figment = { version = "0.10.19", features = ["env", "toml"] }
 sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls-ring", "postgres", "chrono"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -24,8 +33,7 @@ color-eyre = "0.6"
 sha2 = "0.10"
 dotenv = "0.15"
 clap = { version = "4", features = ["derive"] }
-ammonia = { version = "4", optional = true }
-diff-match-patch-rs = { version = "0.3.2", optional = true }
+diff-match-patch-rs = "0.3.2"
 url-escape = "0.1"
 url = "2"
 regex = "1"
@@ -33,12 +41,10 @@ regex = "1"
 [dependencies.pulldown-cmark]
 git = "https://github.com/frostu8/pulldown-cmark"
 branch = "impl-wikilinks"
-optional = true
 
 [dependencies.pulldown-cmark-escape]
 git = "https://github.com/frostu8/pulldown-cmark"
 branch = "impl-wikilinks"
-optional = true
 
 [build-dependencies]
 eyre = "0.6"

@@ -3,9 +3,11 @@
 use color_eyre::Section;
 use eyre::Report;
 
-use inferno::read_config;
+use inferno::{read_config, routes};
 
-use warp::Filter;
+use tracing::info;
+
+use tower_http::{services::ServeDir, trace::TraceLayer};
 
 use std::net::SocketAddr;
 
@@ -30,13 +32,18 @@ async fn main() -> Result<(), Report> {
             .note("a database recreation may be necessary"));
     }
 
-    let routes = warp::fs::dir(state.static_files_dir);
     // TODO proper port/addr stuff
     let addr: SocketAddr = ([0, 0, 0, 0], state.port).into();
 
-    warp::serve(routes).run(addr).await;
+    let static_dir = ServeDir::new(&state.static_files_dir);
+    let routes = routes::all()
+        .with_state(state)
+        .fallback_service(static_dir)
+        .layer(TraceLayer::new_for_http());
 
-    Ok(())
+    info!("listening on {}...", addr);
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    axum::serve(listener, routes).await.map_err(Report::from)
 }
 
 fn install_tracing() {

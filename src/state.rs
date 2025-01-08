@@ -1,7 +1,9 @@
 //! Server shared state and config.
 
+use std::fmt::{self, Debug, Formatter};
+use std::future::Future;
+use std::path::PathBuf;
 use std::sync::Arc;
-use std::{future::Future, path::PathBuf};
 
 use base16::encode_lower;
 
@@ -141,6 +143,15 @@ impl ServerState {
             pool,
             keys,
         })
+    }
+}
+
+impl Debug for ServerState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ServerState")
+            .field("port", &self.port)
+            .field("static_files_dir", &self.static_files_dir)
+            .finish_non_exhaustive()
     }
 }
 

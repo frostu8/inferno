@@ -3,6 +3,8 @@ import {EditorState} from "@codemirror/state";
 import {markdown} from "@codemirror/lang-markdown";
 import {infernoTheme} from "./theme";
 
+import './style/main.scss';
+
 /**
  * Upgrades a textarea to a CodeMirror editor.
  *

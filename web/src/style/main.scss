@@ -149,9 +149,8 @@ input[type="password"] {
 	@include sidebar-item;
 }
 
-.title {
-	border-bottom: 2px dotted gray;
-	padding-bottom: 16px;
+hr {
+	border: 2px dotted gray;
 }
 
 .subtitle {
