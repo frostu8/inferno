@@ -9,6 +9,8 @@ pub mod view;
 
 pub use crate::slug::Slug;
 
+pub const HEADING_ID_PREFIX: &str = "heading-";
+
 use leptos::prelude::*;
 use leptos::Params;
 use leptos_meta::{Meta, Title};
@@ -296,7 +298,8 @@ where
         return id;
     }
 
-    let mut result = String::with_capacity(id.len());
+    let mut result = String::with_capacity(id.len() + HEADING_ID_PREFIX.len());
+    result.push_str(HEADING_ID_PREFIX);
     let mut i = 0;
     let mut mark = 0;
     let mut in_whitespace = false;
