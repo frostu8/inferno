@@ -16,6 +16,8 @@ Cargo.lock
 # dev environment
 .env
 
-# do not commit inferno.ext.js as it is a build artifact
-/public/inferno.ext.js
-/js/node_modules
+# ignore node modules
+/web/node_modules
+
+# ignore web build artifacts
+/site

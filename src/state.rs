@@ -1,33 +1,46 @@
-//! General server-only types and functions.
+//! Server shared state and config.
 
-use std::future::Future;
 use std::sync::Arc;
+use std::{future::Future, path::PathBuf};
 
 use base16::encode_lower;
 
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
-use jsonwebtoken::{DecodingKey, EncodingKey};
+use jsonwebtoken::{errors::Error as JwtError, DecodingKey, EncodingKey};
 
 use sqlx::{pool::PoolOptions, PgPool};
 
-use serde::Deserialize;
+use color_eyre::Section;
+use eyre::{Report, WrapErr as _};
 
-use anyhow::{bail, Error};
+use serde::{Deserialize, Serialize};
+
+use figment::{
+    providers::{Env, Format, Serialized, Toml},
+    Figment,
+};
+
+/// The default port the server is hosted on.
+pub const DEFAULT_PORT: u16 = 4000;
 
 /// Server config.
 ///
-/// Can construct a [`ServerState`] using [`ServerStateConfig::build`].
-#[derive(Clone, Default, Deserialize, PartialEq)]
-pub struct ServerStateConfig {
+/// Can construct a [`ServerState`] using [`ServerConfig::build`].
+#[derive(Clone, Deserialize, Serialize, PartialEq)]
+pub struct ServerConfig {
+    port: u16,
+    static_files_dir: PathBuf,
+    #[serde(default)]
     database_url: Option<String>,
+    #[serde(default)]
     signing_key: Option<String>,
 }
 
-impl ServerStateConfig {
-    /// Creates a new `ServerStateConfig` with sensible defaults.
-    pub fn new() -> ServerStateConfig {
-        ServerStateConfig::default()
+impl ServerConfig {
+    /// Creates a new `ServerConfig` with sensible defaults.
+    pub fn new() -> ServerConfig {
+        ServerConfig::default()
     }
 
     /// The database connection url.
@@ -50,8 +63,19 @@ impl ServerStateConfig {
     }
 
     /// Builds a [`ServerState`], establishing any needed connections and such.
-    pub fn build(self) -> impl Future<Output = Result<ServerState, Error>> {
+    pub fn build(self) -> impl Future<Output = Result<ServerState, Report>> {
         ServerState::new(self)
+    }
+}
+
+impl Default for ServerConfig {
+    fn default() -> Self {
+        ServerConfig {
+            port: DEFAULT_PORT,
+            static_files_dir: PathBuf::from("./site"),
+            database_url: None,
+            signing_key: None,
+        }
     }
 }
 
@@ -60,6 +84,10 @@ impl ServerStateConfig {
 /// Cheaply cloneable.
 #[derive(Clone)]
 pub struct ServerState {
+    /// The port the server is on.
+    pub port: u16,
+    /// Where static files should be served from.
+    pub static_files_dir: PathBuf,
     /// A database connection pool.
     pub pool: PgPool,
     /// The secret signing keys for tokens.
@@ -72,12 +100,19 @@ pub struct ServerState {
 impl ServerState {
     /// Creates a new `ServerState`.
     ///
-    /// See [`ServerStateConfig`] and [`ServerStateConfig::build`] on how to
+    /// See [`ServerConfig`] and [`ServerConfig::build`] on how to
     /// use this.
-    pub async fn new(config: ServerStateConfig) -> Result<ServerState, Error> {
+    pub async fn new(config: ServerConfig) -> Result<ServerState, Report> {
+        let ServerConfig {
+            port,
+            static_files_dir,
+            ..
+        } = config;
+
         // get url
         let Some(database_url) = config.database_url.as_ref() else {
-            bail!("`DATABASE_URL` or database_url not set in config");
+            return Err(Report::msg("`DATABASE_URL` not present")
+                .suggestion("define `DATABASE_URL` with a valid postgres endpoint"));
         };
 
         // establish database connection
@@ -92,11 +127,20 @@ impl ServerState {
             None => {
                 let key = random_signing_key();
 
-                Arc::from(SigningKeys::new(&key)?)
+                Arc::from(
+                    SigningKeys::new(&key)
+                        .wrap_err("failed to create signing keys")
+                        .suggestion("signing key must be a valid HMAC secret")?,
+                )
             }
         };
 
-        Ok(ServerState { pool, keys })
+        Ok(ServerState {
+            port,
+            static_files_dir,
+            pool,
+            keys,
+        })
     }
 }
 
@@ -110,13 +154,7 @@ pub struct SigningKeys {
 
 impl SigningKeys {
     /// Creates a new set of `SigningKeys` from a base64 secret.
-    pub fn new(secret: &str) -> Result<SigningKeys, Error> {
-        assert!(
-            secret.len() == 512,
-            "key is invalid length {}",
-            secret.len()
-        );
-
+    pub fn new(secret: &str) -> Result<SigningKeys, JwtError> {
         Ok(SigningKeys {
             encoding: EncodingKey::from_base64_secret(secret)?,
             decoding: DecodingKey::from_base64_secret(secret)?,
@@ -131,4 +169,15 @@ pub fn random_signing_key() -> String {
     rng.fill(&mut bytes);
 
     encode_lower(&bytes)
+}
+
+/// Reads the config from the environment.
+pub fn read_config() -> Result<ServerConfig, Report> {
+    Figment::new()
+        .merge(Serialized::defaults(ServerConfig::default()))
+        .merge(Toml::file("inferno.toml"))
+        .merge(Env::prefixed("INFERNO_"))
+        .merge(Env::raw().only(&["DATABASE_URL", "PORT"]))
+        .extract()
+        .map_err(|e| Report::from(e))
 }

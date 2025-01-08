@@ -39,8 +39,7 @@ COPY --from=builder /work/target/site /app/site
 COPY --from=builder /work/Cargo.toml /app/
 
 ENV RUST_LOG="info"
-ENV LEPTOS_SITE_ADDR="0.0.0.0:8080"
-ENV LEPTOS_SITE_ROOT=./site
+ENV INFERNO_SITE_ROOT=./site
 EXPOSE 8080
 
 CMD ["/app/inferno"]
