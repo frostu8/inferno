@@ -1,8 +1,5 @@
 #![forbid(unsafe_code)]
 
-//pub mod app;
-//pub mod error;
-//pub mod page;
 pub mod account;
 pub mod cli;
 pub mod html;
