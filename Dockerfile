@@ -29,6 +29,7 @@ COPY --from=builder /work/site /app/site
 
 ENV RUST_LOG="info"
 ENV INFERNO_SITE_ROOT=./site
+ENV PORT=8080
 EXPOSE 8080
 
 CMD ["/app/inferno"]
