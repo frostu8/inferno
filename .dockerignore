@@ -17,6 +17,9 @@
 # dev environment
 **/.env
 
+# ignore end2end tests
+/end2end
+
 # ignore node modues
 /web/node_modules
 

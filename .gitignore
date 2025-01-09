@@ -19,5 +19,10 @@ Cargo.lock
 # ignore node modules
 /web/node_modules
 
+# ignore testing results
+/end2end/node_modules
+/end2end/playwright-report
+/end2end/test-results
+
 # ignore web build artifacts
 /site
