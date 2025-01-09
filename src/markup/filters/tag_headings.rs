@@ -37,11 +37,11 @@ where
     type Item = Event<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(tos) = self.buffer.pop_back() {
+        if let Some(tos) = self.buffer.pop_front() {
             return Some(tos);
         };
 
-        while let Some(ev) = self.inner.next() {
+        for ev in self.inner.by_ref() {
             // transform local links
             let ev = if let Start(Tag::Link {
                 link_type,
@@ -80,7 +80,7 @@ where
                         id,
                         classes,
                         attrs,
-                        events: VecDeque::new(),
+                        events: Vec::new(),
                     });
                 }
                 End(TagEnd::Heading(orig_level)) if self.heading.is_some() => {
@@ -93,7 +93,7 @@ where
                         mut events,
                     } = self.heading.take().unwrap();
 
-                    events.push_front(End(TagEnd::Heading(orig_level)));
+                    events.push(End(TagEnd::Heading(orig_level)));
 
                     let id = if let Some(id) = id {
                         id
@@ -110,7 +110,7 @@ where
                         normalize_heading_id(text).into()
                     };
 
-                    self.buffer = events;
+                    self.buffer = events.into();
 
                     return Some(Start(Tag::Heading {
                         level,
@@ -121,7 +121,7 @@ where
                 }
                 ev => {
                     if let Some(heading) = self.heading.as_mut() {
-                        heading.events.push_front(ev);
+                        heading.events.push(ev);
                     } else {
                         return Some(ev);
                     }
@@ -141,5 +141,5 @@ struct HeadingInfo<'a> {
     id: Option<CowStr<'a>>,
     classes: Vec<CowStr<'a>>,
     attrs: Vec<(CowStr<'a>, Option<CowStr<'a>>)>,
-    events: VecDeque<Event<'a>>,
+    events: Vec<Event<'a>>,
 }
