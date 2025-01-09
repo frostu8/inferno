@@ -10,6 +10,7 @@ const background = "#001b29",
   lavender = "#A0A0CF",
   awesomeYellow = "#fff3b0",
   rose = "#E87EA1",
+  orange = "#E09F3E",
   //infernoRed = "#eb2431",
   link = "#EE8689";
 
@@ -30,7 +31,7 @@ const infernoBaseTheme: Extension = EditorView.theme({
   ".cm-activeLineGutter": {
     backgroundColor: highlightBackground
   }
-});
+}, { dark: true });
 
 const infernoHighlightStyle = HighlightStyle.define([
   {tag: t.keyword,
@@ -46,7 +47,7 @@ const infernoHighlightStyle = HighlightStyle.define([
   {tag: [t.typeName, t.className, t.number, t.changed, t.annotation, t.modifier, t.self, t.namespace],
    color: awesomeYellow},
   {tag: [t.operator, t.operatorKeyword, t.url, t.escape, t.regexp, t.link, t.special(t.string)],
-   color: "pink"},
+   color: orange},
   {tag: [t.meta, t.comment],
    color: "cyan"},
   {tag: t.strong,
