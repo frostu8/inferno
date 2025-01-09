@@ -56,7 +56,7 @@ struct EditPageTemplate {
 }
 
 #[derive(Template)]
-#[template(path = "page/not_found.html")]
+#[template(path = "page/404.html")]
 struct ShowNotFound {
     /// The full URI of the page.
     pub request_path: String,
