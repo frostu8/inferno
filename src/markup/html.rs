@@ -33,6 +33,21 @@ where
 
     Builder::default()
         .generic_attributes(generic_attributes)
+        .attribute_filter(|element, attribute, value| match (element, attribute) {
+            ("h1", "id")
+            | ("h2", "id")
+            | ("h3", "id")
+            | ("h4", "id")
+            | ("h5", "id")
+            | ("h6", "id")
+                if value.starts_with("heading-") =>
+            {
+                Some(value.into())
+            }
+            // deny all ids on any other element
+            (_, "id") => None,
+            _ => Some(value.into()),
+        })
         .link_rel(Some("noopener noreferrer"))
         .url_relative(UrlRelative::PassThrough)
         .clean(&html_output)
