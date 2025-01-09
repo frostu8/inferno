@@ -8,8 +8,10 @@ use crate::schema::page::{get_existing_links_from, get_page_content};
 use crate::slug::Slug;
 use crate::{markup, ServerState};
 
-use axum::extract::State;
-use axum::{extract::Path, response::Result};
+use axum::{
+    extract::{Path, State},
+    response::{IntoResponse, Response, Result},
+};
 
 use tracing::instrument;
 
@@ -18,15 +20,26 @@ use askama::Template;
 use super::log_error;
 
 #[derive(Template)]
-#[template(path = "show.html")]
-#[doc(hidden)]
-pub struct ShowPageTemplate {
+#[template(path = "page/show.html")]
+struct ShowPageTemplate {
+    /// The user.
+    pub current_user: Option<CurrentUser>,
+    /// The path of the page.
+    pub path: Slug,
     /// The actual page content.
-    page: RenderedPage,
+    pub page: RenderedPage,
+}
+
+#[derive(Template)]
+#[template(path = "page/not_found.html")]
+struct ShowNotFound {
+    /// The user.
+    pub current_user: Option<CurrentUser>,
+    /// The path of the page.
+    pub path: Slug,
 }
 
 struct RenderedPage {
-    pub title: String,
     pub content_clean: String,
 }
 
@@ -35,9 +48,9 @@ struct RenderedPage {
 #[cfg_attr(debug_assertions, axum::debug_handler)]
 pub async fn show(
     Path(path): Path<Slug>,
-    user: Result<CurrentUser, AccountError>,
+    current_user: Result<CurrentUser, AccountError>,
     state: State<ServerState>,
-) -> Result<HtmlTemplate<ShowPageTemplate>> {
+) -> Result<Response> {
     // get page content
     let page = get_page_content(&path, &state.pool)
         .await
@@ -50,17 +63,30 @@ pub async fn show(
         .collect::<HashSet<Slug>>();
 
     if let Some(page) = page {
-        let title = path.title();
         let events = markup::parse_markdown(&page.content);
         let content_clean = markup::to_html(events, links, Some(page.content.len()));
 
-        let page = RenderedPage {
-            title: title.into_owned(),
-            content_clean,
-        };
+        let page = RenderedPage { content_clean };
 
-        Ok(HtmlTemplate::new(ShowPageTemplate { page }))
+        Ok(HtmlTemplate::new(ShowPageTemplate {
+            current_user: current_user.ok(),
+            path,
+            page,
+        })
+        .into_response())
     } else {
-        todo!()
+        Ok(HtmlTemplate::new(ShowNotFound {
+            current_user: current_user.ok(),
+            path,
+        })
+        .into_response())
+    }
+}
+
+mod filters {
+    use crate::slug::Slug;
+
+    pub fn title(slug: &Slug) -> ::askama::Result<String> {
+        Ok(slug.title().into_owned())
     }
 }

@@ -14,7 +14,6 @@ $fg-text-accent: #EE8689;
 $fg-link-noexist: #AA88A2;
 
 @use "account/login";
-@use "sidebar";
 
 @mixin sidebar-item {
 	font-size: 18px;
@@ -139,14 +138,29 @@ input[type="password"] {
 	flex-basis: 300px;
 	flex-shrink: 0;
 	padding: 0 24px;
+
+	a {
+		@include sidebar-item;
+	}
+
+	& > ul {
+		list-style-type: none;
+		padding: 0;
+	}
 }
 
 #sidebar h1 {
 	color: $fg-primary;
 }
 
-.sidebar-item {
-	@include sidebar-item;
+.user-digest {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .username {
+    font-weight: bold;
+  }
 }
 
 hr {

@@ -1,8 +1,5 @@
 //! Account authentication, management and creation.
 
-//pub mod login;
-//pub mod logout;
-
 use crate::schema::user::{get_user, User};
 use crate::{ServerState, SigningKeys};
 
@@ -16,6 +13,7 @@ use cookie::Cookie;
 use serde::{Deserialize, Serialize};
 
 use std::fmt::{self, Display, Formatter};
+use std::ops::Deref;
 use std::str::FromStr as _;
 
 use axum::extract::FromRequestParts;
@@ -88,9 +86,14 @@ where
 
 /// Like [`Token`], but also fetches the user from the database.
 #[derive(Clone, Debug)]
-pub struct CurrentUser {
-    /// The user.
-    pub user: User,
+pub struct CurrentUser(User);
+
+impl Deref for CurrentUser {
+    type Target = User;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl<S> FromRequestParts<S> for CurrentUser
@@ -108,7 +111,7 @@ where
             .await
             .map_err(Error::Db)
             .and_then(|user| user.ok_or_else(|| Error::UserNoLongerExists))
-            .map(|user| CurrentUser { user })
+            .map(|user| CurrentUser(user))
     }
 }
 
