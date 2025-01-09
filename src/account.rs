@@ -111,7 +111,7 @@ where
             .await
             .map_err(Error::Db)
             .and_then(|user| user.ok_or_else(|| Error::UserNoLongerExists))
-            .map(|user| CurrentUser(user))
+            .map(CurrentUser)
     }
 }
 

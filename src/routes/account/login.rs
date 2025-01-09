@@ -116,7 +116,7 @@ pub async fn post(
             // no login with the username found
             Ok(HtmlTemplate::new(ShowLoginTemplate {
                 redirect_to,
-                error: Some(format!("incorrect password")),
+                error: Some("incorrect password".into()),
             })
             .into_response())
         }

@@ -8,22 +8,18 @@ use std::path::PathBuf;
 use std::process::Command;
 
 fn main() -> Result<(), Report> {
-    let manifest_dir = env::var("CARGO_MANIFEST_DIR")
-        .map(|s| PathBuf::from(s))
-        .unwrap();
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR").map(PathBuf::from).unwrap();
 
     let webpack_dir = manifest_dir.join("web");
 
     let webpack_out_dir = manifest_dir.join("site");
 
-    for entry in read_dir(&webpack_dir)? {
-        if let Ok(entry) = entry {
-            if entry.path().file_name() == Some(OsStr::new("node_modules")) {
-                continue;
-            }
-
-            println!("cargo:rerun-if-changed={}", entry.path().display());
+    for entry in read_dir(&webpack_dir)?.flatten() {
+        if entry.path().file_name() == Some(OsStr::new("node_modules")) {
+            continue;
         }
+
+        println!("cargo:rerun-if-changed={}", entry.path().display());
     }
 
     // change working directory
@@ -31,7 +27,7 @@ fn main() -> Result<(), Report> {
 
     // run rollup command
     let handle = Command::new("npx")
-        .args(&["rollup", "-c"])
+        .args(["rollup", "-c"])
         .env("WEBPACK_OUT_DIR", webpack_out_dir)
         .spawn()?;
     let output = handle

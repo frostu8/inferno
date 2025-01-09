@@ -190,5 +190,5 @@ pub fn read_config() -> Result<ServerConfig, Report> {
         .merge(Env::prefixed("INFERNO_"))
         .merge(Env::raw().only(&["DATABASE_URL", "PORT"]))
         .extract()
-        .map_err(|e| Report::from(e))
+        .map_err(Report::from)
 }
