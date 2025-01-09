@@ -5,8 +5,7 @@
 Inferno subscribes to a minimalist philosophy that wikis should only be the
 requested content and nothing else.
 
-Check out a running instance at <https://infernowiki.rs/>, but be gentle,
-please.
+Check out a running instance at <https://inferno.wiki/>, but be gentle, please.
 
 ## `#![forbid(unsafe_code)]`
 Unsafe code is forbidden. Classically and interestingly, many of the big day-0
