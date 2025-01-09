@@ -22,10 +22,10 @@
       <input type="submit" value="Save Changes">
     </div>
     <textarea id="page-source" name="source" rows="40">
-      {{ page.content }}
+      {{- page.content -}}
     </textarea>
     {% if let Some(hash) = page.latest_change_hash %}
-      <input type="hidden" value="{{ hash }}">
+      <input type="hidden" name="latest_change_hash" value="{{ hash }}">
     {% endif %}
   </form>
 {% endblock %}

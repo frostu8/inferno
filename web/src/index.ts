@@ -5,6 +5,19 @@ import {infernoTheme} from "./theme";
 
 import './style/main.scss';
 
+window.addEventListener("load", init)
+
+/**
+ * Initializes basic script functionality.
+ */
+function init() {
+  let editor = document.getElementById("page-source") as HTMLTextAreaElement;
+
+  if (editor !== null) {
+    upgradeEditor(editor);
+  }
+}
+
 /**
  * Upgrades a textarea to a CodeMirror editor.
  *
