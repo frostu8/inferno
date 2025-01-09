@@ -1,0 +1,31 @@
+{% extends "shell.html" %}
+
+{% block body %}
+  <div class="view-content">
+    <nav id="sidebar">
+      <h1>~/inferno</h1>
+      <ul>
+        {% if let Some(user) = current_user %}
+        <li>
+          <form action="/~account/logout" method="post" class="user-digest">
+            <p>
+              Signed in as
+              <span class="username">{{ user.username }}</span>
+            </p>
+            <input type="hidden" name="redirect_to" value="{{ request_path }}">
+            <input class="sidebar-item" type="submit" value="Logout">
+          </form>
+        </li>
+        {% else %}
+        <li>
+          <a href="/~account/login?redirect_to={{ request_path|urlencode }}"><p>Login</p></a>
+        </li>
+        {% endif %}
+        {% block nav %}{% endblock %}
+      </ul>
+    </nav>
+    <main>
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+{% endblock %}

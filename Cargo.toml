@@ -4,148 +4,48 @@ authors = ["Dante Helmore <frostu8@protonmail.com>"]
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
-leptos = { version = "0.7.0", features = ["nightly"] }
-leptos_router = { version = "0.7.0", features = ["nightly"] }
-axum = { version = "0.7", optional = true }
-console_error_panic_hook = "0.1"
-leptos_axum = { version = "0.7.0", optional = true }
-leptos_meta = { version = "0.7.0" }
-tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
-tower = { version = "0.4", optional = true }
-tower-http = { version = "0.5", features = ["fs"], optional = true }
-wasm-bindgen = "=0.2.96"
-thiserror = "1"
-tracing = { version = "0.1", optional = true }
+# Generic HTTP libraries
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-error = "0.2"
+axum = { version = "0.8", features = ["macros", "original-uri"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["fs", "trace"] }
 http = "1"
-sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls-ring", "postgres", "chrono"], optional = true }
+
+# HTML templating and rendering
+askama = "0.12"
+ammonia = "4"
+
+# For config
+figment = { version = "0.10.19", features = ["env", "toml"] }
+sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls-ring", "postgres", "chrono"] }
 serde = { version = "1.0", features = ["derive"] }
-rand = { version = "0.8", optional = true }
-base16 = { version = "0.2.1", optional = true }
-jsonwebtoken = { version = "9", optional = true }
-cookie = { version = "0.18.1", optional = true }
-chrono = { version = "0.4.39", optional = true }
-anyhow = "1.0.94"
-sha2 = { version = "0.10.8", optional = true }
-dotenv = { version = "0.15.0", optional = true }
-clap = { version = "4.5.23", optional = true, features = ["derive"] }
-web-sys = { version = "=0.3.73", features = [
-    "MouseEvent",
-    "HtmlTextAreaElement",
-] }
-ammonia = { version = "4.0.0", optional = true }
-diff-match-patch-rs = { version = "0.3.2", optional = true }
-url-escape = "0.1.1"
-url = { version = "2.5.4", optional = true }
-regex = "1.11"
+rand = "0.8"
+base16 = "0.2"
+jsonwebtoken = "9"
+cookie = "0.18"
+chrono = "0.4"
+eyre = "0.6"
+color-eyre = "0.6"
+sha2 = "0.10"
+dotenv = "0.15"
+clap = { version = "4", features = ["derive"] }
+diff-match-patch-rs = "0.3.2"
+url-escape = "0.1"
+url = "2"
+regex = "1"
 
 [dependencies.pulldown-cmark]
 git = "https://github.com/frostu8/pulldown-cmark"
 branch = "impl-wikilinks"
-optional = true
 
 [dependencies.pulldown-cmark-escape]
 git = "https://github.com/frostu8/pulldown-cmark"
 branch = "impl-wikilinks"
-optional = true
 
-[features]
-hydrate = ["leptos/hydrate"]
-ssr = [
-    "dep:axum",
-    "dep:tokio",
-    "dep:tower",
-    "dep:tower-http",
-    "dep:leptos_axum",
-    "leptos/ssr",
-    "leptos_meta/ssr",
-    "leptos_router/ssr",
-    "dep:tracing",
-    "dep:rand",
-    "dep:sqlx",
-    "dep:base16",
-    "dep:jsonwebtoken",
-    "dep:cookie",
-    "dep:chrono",
-    "dep:sha2",
-    "dep:dotenv",
-    "dep:clap",
-    "dep:pulldown-cmark",
-    "dep:pulldown-cmark-escape",
-    "dep:ammonia",
-    "dep:diff-match-patch-rs",
-    "dep:url",
-]
-
-# Defines a size-optimized profile for the WASM bundle in release mode
-[profile.wasm-release]
-inherits = "release"
-opt-level = 'z'
-lto = true
-codegen-units = 1
-panic = "abort"
-
-[package.metadata.leptos]
-# The name used by wasm-bindgen/cargo-leptos for the JS/WASM bundle. Defaults to the crate name
-output-name = "inferno"
-
-# The site root folder is where cargo-leptos generate all output. WARNING: all content of this folder will be erased on a rebuild. Use it in your server setup.
-site-root = "target/site"
-
-# The site-root relative folder where all compiled output (JS, WASM and CSS) is written
-# Defaults to pkg
-site-pkg-dir = "pkg"
-
-# [Optional] The source CSS file. If it ends with .sass or .scss then it will be compiled by dart-sass into CSS. The CSS is optimized by Lightning CSS before being written to <site-root>/<site-pkg>/app.css
-style-file = "style/main.scss"
-# Assets source dir. All files found here will be copied and synchronized to site-root.
-# The assets-dir cannot have a sub directory with the same name/path as site-pkg-dir.
-#
-# Optional. Env: LEPTOS_ASSETS_DIR.
-assets-dir = "public"
-
-# The IP and port (ex: 127.0.0.1:3000) where the server serves the content. Use it in your server setup.
-site-addr = "127.0.0.1:3000"
-
-# The port to use for automatic reload monitoring
-reload-port = 3001
-
-# [Optional] Command to use when running end2end tests. It will run in the end2end dir.
-#   [Windows] for non-WSL use "npx.cmd playwright test"
-#   This binary name can be checked in Powershell with Get-Command npx
-end2end-cmd = "npx playwright test"
-end2end-dir = "end2end"
-
-#  The browserlist query used for optimizing the CSS.
-browserquery = "defaults"
-
-# The environment Leptos will run in, usually either "DEV" or "PROD"
-env = "DEV"
-
-# The features to use when compiling the bin target
-#
-# Optional. Can be over-ridden with the command line parameter --bin-features
-bin-features = ["ssr"]
-
-# If the --no-default-features flag should be used when compiling the bin target
-#
-# Optional. Defaults to false.
-bin-default-features = false
-
-# The features to use when compiling the lib target
-#
-# Optional. Can be over-ridden with the command line parameter --lib-features
-lib-features = ["hydrate"]
-
-# If the --no-default-features flag should be used when compiling the lib target
-#
-# Optional. Defaults to false.
-lib-default-features = false
-
-# The profile to use for the lib target when compiling for release
-#
-# Optional. Defaults to "release".
-kib-profile-release = "wasm-release"
+[build-dependencies]
+eyre = "0.6"
+color-eyre = "0.6"

@@ -14,7 +14,6 @@ $fg-text-accent: #EE8689;
 $fg-link-noexist: #AA88A2;
 
 @use "account/login";
-@use "sidebar";
 
 @mixin sidebar-item {
 	font-size: 18px;
@@ -45,7 +44,7 @@ body {
 
 .view-content {
 	// center page content on screen
-	width: 1200px;
+	width: 1400px;
 	margin: auto;
 
 	// fill screen
@@ -139,19 +138,33 @@ input[type="password"] {
 	flex-basis: 300px;
 	flex-shrink: 0;
 	padding: 0 24px;
+
+	a {
+		@include sidebar-item;
+	}
+
+	& > ul {
+		list-style-type: none;
+		padding: 0;
+	}
 }
 
 #sidebar h1 {
 	color: $fg-primary;
 }
 
-.sidebar-item {
-	@include sidebar-item;
+.user-digest {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .username {
+    font-weight: bold;
+  }
 }
 
-.title {
-	border-bottom: 2px dotted gray;
-	padding-bottom: 16px;
+hr {
+	border: 2px dotted gray;
 }
 
 .subtitle {
@@ -186,7 +199,7 @@ input[type="password"] {
 }
 
 .editor .cm-editor {
-	width: 750px;
+	font-size: 14px;
 }
 
 .login-form-container {

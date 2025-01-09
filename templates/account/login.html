@@ -1,0 +1,22 @@
+{% extends "../base.html" %}
+
+{% block head %}
+  <title>Login - ~/inferno</title>
+{% endblock %}
+
+{% block body %}
+  <div class="login-form-container">
+    <h1>~/inferno</h1>
+    <form action="/~account/login" method="post" class="form-login">
+      {% if let Some(msg) = error %}
+        <p>{{ msg }}</p>
+      {% endif %}
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password">
+      <input type="hidden" name="redirect_to" value="{{ redirect_to }}">
+      <input type="submit" value="Login">
+    </form>
+  </div>
+{% endblock %}

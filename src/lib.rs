@@ -1,29 +1,13 @@
 #![forbid(unsafe_code)]
 
 pub mod account;
-pub mod app;
-pub mod components;
-pub mod error;
-pub mod page;
-pub mod slug;
-pub mod user;
-
-#[cfg(feature = "ssr")]
 pub mod cli;
-#[cfg(feature = "ssr")]
+pub mod html;
+pub mod markup;
 pub mod passwords;
-#[cfg(feature = "ssr")]
+pub mod routes;
 pub mod schema;
-#[cfg(feature = "ssr")]
-pub mod server;
+pub mod slug;
+pub mod state;
 
-#[cfg(feature = "ssr")]
-pub use server::*;
-
-#[cfg(feature = "hydrate")]
-#[wasm_bindgen::prelude::wasm_bindgen]
-pub fn hydrate() {
-    use crate::app::*;
-    console_error_panic_hook::set_once();
-    leptos::mount::hydrate_body(App);
-}
+pub use state::*;

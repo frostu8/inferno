@@ -1,11 +1,12 @@
-//! Logic for rendering pages.
+//! Logic for rendering pages into HTML.
 
 use ammonia::{Builder, UrlRelative};
 
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use crate::page::is_uri_absolute;
+use super::is_uri_absolute;
+
 use crate::slug::Slug;
 
 use pulldown_cmark::{

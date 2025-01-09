@@ -1,0 +1,23 @@
+{% extends "../base.html" %}
+
+{% block head %}
+  <title>{{ path|title }}</title>
+{% endblock %}
+
+{% block nav %}
+  {% if let Some(user) = current_user %}
+    <li>
+      <a href="/~edit/{{ path }}">
+        <p>Edit page</p>
+      </a>
+    </li>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  <h1 class="title">{{ path|title }}</h1>
+  <hr>
+  <div class="page-content">
+    {{ page.content_clean|safe }}
+  </div>
+{% endblock %}
