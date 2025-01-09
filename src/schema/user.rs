@@ -1,6 +1,6 @@
 //! User operations.
 
-use sqlx::{Executor, PgPool, Postgres};
+use sqlx::{Executor, Postgres};
 
 use chrono::Utc;
 
@@ -38,7 +38,7 @@ where
 
 /// Fetches the password login of a user.
 pub async fn get_password_login<'c, E>(
-    db: &PgPool,
+    db: E,
     username: &str,
 ) -> Result<Option<PasswordLogin>, sqlx::Error>
 where
@@ -58,7 +58,7 @@ where
 }
 
 /// Creates a user account with no login, returning the user.
-pub async fn create_user<'c, E>(db: &PgPool, username: &str) -> Result<User, sqlx::Error>
+pub async fn create_user<'c, E>(db: E, username: &str) -> Result<User, sqlx::Error>
 where
     E: Executor<'c, Database = Postgres>,
 {

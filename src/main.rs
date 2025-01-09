@@ -3,7 +3,10 @@
 use color_eyre::Section;
 use eyre::Report;
 
-use inferno::{read_config, routes};
+use inferno::{
+    cli::{Cli, ShouldContinue},
+    read_config, routes,
+};
 
 use tracing::info;
 
@@ -24,7 +27,10 @@ async fn main() -> Result<(), Report> {
     let state = config.build().await?;
 
     // try expose cli
-    //Cli::parse().run(&state).await;
+    match Cli::parse().run(&state).await? {
+        ShouldContinue::Daemon => (),
+        ShouldContinue::Exit => std::process::exit(0),
+    }
 
     // embed migrations
     if let Err(err) = sqlx::migrate!("./migrations").run(&state.pool).await {

@@ -1,0 +1,31 @@
+{% extends "../base.html" %}
+
+{% block title %}
+  <title>Editing {{ path|title}}</title>
+{% endblock %}
+
+{% block nav %}
+  {% if let Some(user) = current_user %}
+    <li>
+      <a href="/~/{{ path }}">
+        <p>View page</p>
+      </a>
+    </li>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  <h1 class="title">Editing {{ path|title }}</h1>
+  <hr>
+  <form class="editor" action="/~/{{ path }}" method="post">
+    <div class="page-admin">
+      <input type="submit" value="Save Changes">
+    </div>
+    <textarea id="page-source" name="source" rows="40">
+      {{ page.content }}
+    </textarea>
+    {% if let Some(hash) = page.latest_change_hash %}
+      <input type="hidden" value="{{ hash }}">
+    {% endif %}
+  </form>
+{% endblock %}

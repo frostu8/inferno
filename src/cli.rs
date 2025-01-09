@@ -1,8 +1,10 @@
 //! General server-only types and functions.
 
-use crate::{passwords, schema::user, server::ServerState};
+use crate::{passwords, schema::user, ServerState};
 
 use clap::{Args, Parser, Subcommand};
+
+use eyre::{Report, WrapErr};
 
 use sqlx::PgPool;
 
@@ -23,27 +25,24 @@ impl Cli {
     /// Runs the command-line interface.
     ///
     /// May never return if a command was processed.
-    pub async fn run(&self, state: &ServerState) {
-        let Some(command) = self.command.as_ref() else {
-            return;
-        };
-
-        match command {
-            Command::Create(Create::User(cmd)) => {
-                if let Err(err) =
-                    create_user_with_password(&state.pool, &cmd.username, &cmd.password).await
-                {
-                    leptos::logging::log!("failed to create user: {}", err);
-                    std::process::exit(1);
+    pub async fn run(&self, state: &ServerState) -> Result<ShouldContinue, Report> {
+        if let Some(command) = self.command.as_ref() {
+            match command {
+                Command::Create(Create::User(cmd)) => {
+                    create_user_with_password(&state.pool, &cmd.username, &cmd.password)
+                        .await
+                        .wrap_err("failed to create user")?;
+                }
+                Command::Create(Create::SigningKey) => {
+                    let key = crate::random_signing_key();
+                    print!("{}", key);
                 }
             }
-            Command::Create(Create::SigningKey) => {
-                let key = crate::server::random_signing_key();
-                print!("{}", key);
-            }
-        }
 
-        std::process::exit(0);
+            Ok(ShouldContinue::Exit)
+        } else {
+            Ok(ShouldContinue::Daemon)
+        }
     }
 }
 
@@ -75,6 +74,13 @@ pub struct CreateUser {
     pub password: String,
 }
 
+pub enum ShouldContinue {
+    /// The server should start as normal.
+    Daemon,
+    /// A one-time command was issued and the process should exit.
+    Exit,
+}
+
 /// Creates a new user in the database manually.
 pub async fn create_user_with_password(
     db: &PgPool,
@@ -88,7 +94,7 @@ pub async fn create_user_with_password(
     let hashed = passwords::hash_password(password, &salt);
 
     // create user account
-    let id = user::create_user(db, username).await?;
+    let user = user::create_user(db, username).await?;
 
     // create login
     sqlx::query(
@@ -97,7 +103,7 @@ pub async fn create_user_with_password(
         VALUES ($1, $2, $3)
         "#,
     )
-    .bind(id)
+    .bind(user.id)
     .bind(hashed)
     .bind(salt)
     .execute(db)
