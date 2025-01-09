@@ -17,7 +17,8 @@
 # dev environment
 **/.env
 
-# do not commit inferno.ext.js as it is a build artifact
-public/inferno.ext.js
-js/node_modules
-fly.toml
+# ignore node modues
+/web/node_modules
+
+# ignore web build artifacts
+/site
