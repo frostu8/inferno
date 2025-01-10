@@ -12,6 +12,7 @@ use tracing::instrument;
 use sha2::{Digest, Sha256};
 
 use crate::slug::Slug;
+use crate::universe::Locator;
 
 /// Result of [`get_page_content`] and [`get_page_for_update`].
 #[derive(sqlx::FromRow)]
@@ -24,8 +25,7 @@ pub struct Page {
 #[instrument]
 pub async fn get_page_content<'c, E>(
     db: E,
-    universe_id: Option<i32>,
-    path: &Slug,
+    Locator { universe_id, path }: Locator<'_>,
 ) -> Result<Option<Page>, sqlx::Error>
 where
     E: Executor<'c, Database = Postgres>,
@@ -37,7 +37,7 @@ where
         RIGHT JOIN changes c ON c.page_id = p.id
         WHERE
             path = $1 AND
-            (universe_id = $2 OR universe_id IS NULL AND $2 IS NULL)
+            universe_id = $2
         ORDER BY c.inserted_at DESC
         LIMIT 1
         "#,
@@ -55,8 +55,7 @@ where
 #[instrument]
 pub async fn get_page_content_for_update<'c, E>(
     db: E,
-    universe_id: Option<i32>,
-    path: &Slug,
+    Locator { universe_id, path }: Locator<'_>,
 ) -> Result<Option<Page>, sqlx::Error>
 where
     E: Executor<'c, Database = Postgres>,
@@ -68,7 +67,7 @@ where
         RIGHT JOIN changes c ON c.page_id = p.id
         WHERE
             path = $1 AND
-            (universe_id = $2 OR universe_id IS NULL AND $2 IS NULL)
+            universe_id = $2
         ORDER BY c.inserted_at DESC
         LIMIT 1
         FOR UPDATE
@@ -87,8 +86,7 @@ where
 #[instrument]
 pub async fn update_page_content<'c, E>(
     db: E,
-    universe_id: Option<i32>,
-    path: &Slug,
+    Locator { universe_id, path }: Locator<'_>,
     content: &str,
 ) -> Result<(), sqlx::Error>
 where
@@ -121,8 +119,7 @@ where
 /// called in conjunction with [`update_page_content`].
 pub async fn save_change<'c, E>(
     db: E,
-    universe_id: Option<i32>,
-    path: &Slug,
+    Locator { universe_id, path }: Locator<'_>,
     author: &str,
     changes: &str,
 ) -> Result<String, sqlx::Error>
@@ -152,7 +149,7 @@ where
         FROM pages p, users u
         WHERE
             p.path = $1 AND
-            (p.universe_id = $6 OR p.universe_id IS NULL AND $6 IS NULL) AND
+            p.universe_id = $6 AND
             u.username = $2
         "#,
     )
@@ -171,8 +168,7 @@ where
 #[instrument]
 pub async fn get_links_from<'c, E>(
     db: E,
-    universe_id: Option<i32>,
-    path: &Slug,
+    Locator { universe_id, path }: Locator<'_>,
 ) -> Result<Vec<Slug>, sqlx::Error>
 where
     E: Executor<'c, Database = Postgres>,
@@ -204,8 +200,7 @@ where
 #[instrument]
 pub async fn get_existing_links_from<'c, E>(
     db: E,
-    universe_id: Option<i32>,
-    path: &Slug,
+    Locator { universe_id, path }: Locator<'_>,
 ) -> Result<Vec<Slug>, sqlx::Error>
 where
     E: Executor<'c, Database = Postgres>,
@@ -218,7 +213,7 @@ where
         JOIN pages p2 ON p2.path = l.dest_path
         WHERE
             p.path = $1 AND
-            (p.universe_id = $2 OR p.universe_id IS NULL AND $2 IS NULL)
+            p.universe_id = $2
         "#,
     )
     .bind(path.as_str())
@@ -236,8 +231,10 @@ where
 /// Adds a new relational link.
 pub async fn establish_link<'c, E>(
     db: E,
-    universe_id: Option<i32>,
-    from: &Slug,
+    Locator {
+        universe_id,
+        path: from,
+    }: Locator<'_>,
     to: &Slug,
 ) -> Result<(), sqlx::Error>
 where
@@ -250,7 +247,7 @@ where
         FROM pages p
         WHERE
             p.path = $1 AND
-            (p.universe_id = $3 OR p.universe_id IS NULL AND $3 IS NULL)
+            p.universe_id = $3
         ON CONFLICT (source_id, dest_path)
         DO NOTHING
         "#,
@@ -267,8 +264,10 @@ where
 #[instrument]
 pub async fn deregister_link<'c, E>(
     db: E,
-    universe_id: Option<i32>,
-    from: &Slug,
+    Locator {
+        universe_id,
+        path: from,
+    }: Locator<'_>,
     to: &Slug,
 ) -> Result<(), sqlx::Error>
 where
@@ -282,7 +281,7 @@ where
             FROM pages
             WHERE
                 path = $1 AND
-                (universe_id = $3 OR universe_id IS NULL AND $3 IS NULL)
+                universe_id = $3
         ) AS p
         WHERE
             l.source_id = p.id AND

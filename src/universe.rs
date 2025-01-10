@@ -4,13 +4,44 @@ use std::fmt::{self, Display, Formatter};
 use std::ops::Deref;
 
 use axum::body::Body;
-use axum::extract::{FromRef, FromRequestParts, OptionalFromRequestParts};
+use axum::extract::{FromRef, FromRequestParts};
 use axum::response::{IntoResponse, Response};
 
 use http::{header, request::Parts, StatusCode};
 
-use crate::schema::universe::{get_universe_by_host, Universe};
+use crate::schema::universe::{get_global_universe, get_universe_by_host};
+use crate::slug::Slug;
 use crate::ServerState;
+
+/// A in-database universe.
+#[derive(Debug, sqlx::FromRow)]
+pub struct Universe {
+    /// The id of the universe.
+    pub id: i32,
+    /// The hostname to match when a request is made.
+    ///
+    /// This can be null for the default universe.
+    pub host: Option<String>,
+}
+
+impl Universe {
+    /// Creates a [`Locator`] for a [`Slug`] in the universe.
+    pub fn locate<'a>(&self, path: &'a Slug) -> Locator<'a> {
+        Locator {
+            universe_id: self.id,
+            path,
+        }
+    }
+}
+
+/// A locator for pages in a universe.
+#[derive(Clone, Copy, Debug)]
+pub struct Locator<'a> {
+    /// The universe id.
+    pub universe_id: i32,
+    /// The page slug.
+    pub path: &'a Slug,
+}
 
 /// An extractor for the universe.
 #[derive(Debug)]
@@ -35,35 +66,23 @@ where
             let host = host.find(':').map(|idx| &host[..idx]).unwrap_or(host);
 
             // search for host in database
-            get_universe_by_host(&state.pool, host)
+            let universe = get_universe_by_host(&state.pool, host)
                 .await
-                .map_err(Error::Db)
-                .and_then(|u| u.ok_or_else(|| Error::InvalidHost(host.into())))
-                .map(CurrentUniverse)
+                .map_err(Error::Db)?;
+
+            if let Some(universe) = universe {
+                Ok(CurrentUniverse(universe))
+            } else {
+                get_global_universe(&state.pool)
+                    .await
+                    .map(CurrentUniverse)
+                    .map_err(Error::Db)
+            }
         } else {
-            Err(Error::NoHost)
-        }
-    }
-}
-
-impl<S> OptionalFromRequestParts<S> for CurrentUniverse
-where
-    ServerState: FromRef<S>,
-    S: Send + Sync,
-{
-    type Rejection = Error;
-
-    async fn from_request_parts(
-        parts: &mut Parts,
-        state: &S,
-    ) -> Result<Option<Self>, Self::Rejection> {
-        let result =
-            <CurrentUniverse as FromRequestParts<S>>::from_request_parts(parts, state).await;
-
-        match result {
-            Ok(universe) => Ok(Some(universe)),
-            Err(Error::NoHost) | Err(Error::InvalidHost(..)) => Ok(None),
-            Err(other) => Err(other),
+            get_global_universe(&state.pool)
+                .await
+                .map(CurrentUniverse)
+                .map_err(Error::Db)
         }
     }
 }
@@ -80,9 +99,9 @@ impl Deref for CurrentUniverse {
 #[derive(Debug)]
 pub enum Error {
     /// No host header passed.
-    NoHost,
+    //NoHost,
     /// Invalid host header.
-    InvalidHost(String),
+    //InvalidHost(String),
     /// Something wrong happened when accessing the database.
     Db(sqlx::Error),
 }
@@ -90,8 +109,8 @@ pub enum Error {
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Error::NoHost => f.write_str("no Host header"),
-            Error::InvalidHost(host) => write!(f, "Host {} not a universe", host),
+            //Error::NoHost => f.write_str("no Host header"),
+            //Error::InvalidHost(host) => write!(f, "Host {} not a universe", host),
             Error::Db(err) => Display::fmt(err, f),
         }
     }
@@ -102,7 +121,7 @@ impl std::error::Error for Error {}
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         let status = match self {
-            Error::NoHost | Error::InvalidHost(..) => StatusCode::BAD_REQUEST,
+            //Error::NoHost | Error::InvalidHost(..) => StatusCode::BAD_REQUEST,
             Error::Db(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
 

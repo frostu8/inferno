@@ -4,10 +4,11 @@ use sqlx::{Executor, Postgres};
 
 use tracing::instrument;
 
-#[derive(sqlx::FromRow, Debug)]
-pub struct Universe {
-    pub id: i32,
-    pub host: String,
+use crate::universe::Universe;
+
+#[derive(Debug)]
+pub struct CreateUniverse<'a> {
+    pub host: Option<&'a str>,
 }
 
 /// Fetches a universe by host.
@@ -30,14 +31,53 @@ where
 
 /// Creates a new universe.
 #[instrument]
-pub async fn create_universe<'c, E>(db: E, host: &str) -> Result<Universe, sqlx::Error>
+pub async fn create_universe<'c, E>(
+    db: E,
+    create: CreateUniverse<'_>,
+) -> Result<Universe, sqlx::Error>
 where
     E: Executor<'c, Database = Postgres>,
 {
+    let CreateUniverse { host } = create;
+
     sqlx::query_as(
         r#"
         INSERT INTO universes (host)
         VALUES ($1)
+        RETURNING id, host
+        "#,
+    )
+    .bind(host)
+    .fetch_one(db)
+    .await
+}
+
+/// Gets the global universe.
+#[instrument]
+pub async fn get_global_universe<'c, E>(db: E) -> Result<Universe, sqlx::Error>
+where
+    E: Executor<'c, Database = Postgres>,
+{
+    sqlx::query_as("SELECT id, host FROM universes WHERE id = 0")
+        .fetch_one(db)
+        .await
+}
+
+/// Creates the global universe.
+#[instrument]
+pub async fn create_global_universe<'c, E>(
+    db: E,
+    create: CreateUniverse<'_>,
+) -> Result<Universe, sqlx::Error>
+where
+    E: Executor<'c, Database = Postgres>,
+{
+    let CreateUniverse { host } = create;
+
+    sqlx::query_as(
+        r#"
+        INSERT INTO universes (id, host)
+        VALUES (0, $1)
         RETURNING id, host
         "#,
     )

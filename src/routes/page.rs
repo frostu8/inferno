@@ -82,18 +82,16 @@ struct Page {
 pub async fn show(
     OriginalUri(uri): OriginalUri,
     Path(path): Path<Slug>,
-    universe: Option<CurrentUniverse>,
+    universe: CurrentUniverse,
     current_user: Result<CurrentUser, AccountError>,
     state: State<ServerState>,
 ) -> Result<Response> {
-    let universe_id = universe.as_ref().map(|u| u.id);
-
     // get page content
-    let page = get_page_content(&state.pool, universe_id, &path)
+    let page = get_page_content(&state.pool, universe.locate(&path))
         .await
         .map_err(log_error)?;
 
-    let links = get_existing_links_from(&state.pool, universe_id, &path)
+    let links = get_existing_links_from(&state.pool, universe.locate(&path))
         .await
         .map_err(log_error)?
         .into_iter()
@@ -128,19 +126,17 @@ pub async fn show(
 pub async fn edit(
     OriginalUri(uri): OriginalUri,
     Path(path): Path<Slug>,
-    universe: Option<CurrentUniverse>,
+    universe: CurrentUniverse,
     current_user: Result<CurrentUser, AccountError>,
     state: State<ServerState>,
 ) -> Result<Response> {
-    let universe_id = universe.as_ref().map(|u| u.id);
-
     let Ok(current_user) = current_user else {
         // TODO show flash
         return Ok(Redirect::to(&format!("/~/{}", path)).into_response());
     };
 
     // get page content
-    let page = get_page_content(&state.pool, universe_id, &path)
+    let page = get_page_content(&state.pool, universe.locate(&path))
         .await
         .map_err(log_error)?;
 
@@ -187,13 +183,11 @@ pub struct UpdatePageSource {
 pub async fn post(
     OriginalUri(uri): OriginalUri,
     Path(path): Path<Slug>,
-    universe: Option<CurrentUniverse>,
+    universe: CurrentUniverse,
     current_user: Result<CurrentUser, AccountError>,
     state: State<ServerState>,
     Form(form): Form<UpdatePageSource>,
 ) -> Result<Response> {
-    let universe_id = universe.as_ref().map(|u| u.id);
-
     let Ok(current_user) = current_user else {
         // TODO show flash or unauthorized
         return Ok(Redirect::to(&format!("/~/{}", path)).into_response());
@@ -205,7 +199,7 @@ pub async fn post(
         state.pool.begin().await.map_err(log_error)?
     };
 
-    let old_page = get_page_content_for_update(&mut *tx, universe_id, &path)
+    let old_page = get_page_content_for_update(&mut *tx, universe.locate(&path))
         .await
         .map_err(log_error)?;
 
@@ -249,12 +243,12 @@ pub async fn post(
     let changes = dmp.patch_to_text(&patches);
 
     // make update to page content
-    update_page_content(&mut *tx, universe_id, &path, &form.source)
+    update_page_content(&mut *tx, universe.locate(&path), &form.source)
         .await
         .map_err(log_error)?;
 
     // get links in source
-    let old_links = get_links_from(&mut *tx, universe_id, &path)
+    let old_links = get_links_from(&mut *tx, universe.locate(&path))
         .await
         .map_err(log_error)?
         .into_iter()
@@ -281,7 +275,7 @@ pub async fn post(
     for link in links.iter() {
         // if link is missing, add it
         if !old_links.contains(link) {
-            establish_link(&mut *tx, universe_id, &path, link)
+            establish_link(&mut *tx, universe.locate(&path), link)
                 .await
                 .map_err(log_error)?;
         }
@@ -290,7 +284,7 @@ pub async fn post(
     for link in old_links.iter() {
         // if link is now missing, remove it
         if !links.contains(link) {
-            deregister_link(&mut *tx, universe_id, &path, link)
+            deregister_link(&mut *tx, universe.locate(&path), link)
                 .await
                 .map_err(log_error)?;
         }
@@ -299,8 +293,7 @@ pub async fn post(
     // add change to db
     save_change(
         &mut *tx,
-        universe_id,
-        &path,
+        universe.locate(&path),
         &current_user.username,
         &changes,
     )

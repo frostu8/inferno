@@ -2,7 +2,10 @@
 
 use crate::{
     passwords,
-    schema::{universe::create_universe, user},
+    schema::{
+        universe::{create_universe, CreateUniverse as CreateUniverseSchema},
+        user,
+    },
     ServerState,
 };
 
@@ -38,9 +41,14 @@ impl Cli {
                         .wrap_err("failed to create user")?;
                 }
                 Command::Create(Create::Universe(cmd)) => {
-                    create_universe(&state.pool, &cmd.host)
-                        .await
-                        .wrap_err("failed to create universe")?;
+                    create_universe(
+                        &state.pool,
+                        CreateUniverseSchema {
+                            host: Some(&cmd.host),
+                        },
+                    )
+                    .await
+                    .wrap_err("failed to create universe")?;
                 }
                 Command::Create(Create::SigningKey) => {
                     let key = crate::random_signing_key();
