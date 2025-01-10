@@ -1,6 +1,10 @@
 //! General server-only types and functions.
 
-use crate::{passwords, schema::user, ServerState};
+use crate::{
+    passwords,
+    schema::{universe::create_universe, user},
+    ServerState,
+};
 
 use clap::{Args, Parser, Subcommand};
 
@@ -33,6 +37,11 @@ impl Cli {
                         .await
                         .wrap_err("failed to create user")?;
                 }
+                Command::Create(Create::Universe(cmd)) => {
+                    create_universe(&state.pool, &cmd.host)
+                        .await
+                        .wrap_err("failed to create universe")?;
+                }
                 Command::Create(Create::SigningKey) => {
                     let key = crate::random_signing_key();
                     print!("{}", key);
@@ -59,11 +68,13 @@ pub enum Command {
 pub enum Create {
     /// Creates a new user.
     User(CreateUser),
+    /// Creates a new universe.
+    Universe(CreateUniverse),
     /// Creates a new signing key for use in `TOKEN_SIGNING_KEY`
     SigningKey,
 }
 
-/// Creates a new object in the database.
+/// Creates a new user in the database.
 #[derive(Debug, Args)]
 pub struct CreateUser {
     /// The username of the account.
@@ -72,6 +83,14 @@ pub struct CreateUser {
     /// The password of the account.
     #[arg(short, long)]
     pub password: String,
+}
+
+/// Creates a new universe  in the database.
+#[derive(Debug, Args)]
+pub struct CreateUniverse {
+    /// The virtual host of the universe.
+    #[arg(short = 'H', long)]
+    pub host: String,
 }
 
 pub enum ShouldContinue {
