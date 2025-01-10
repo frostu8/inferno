@@ -17,22 +17,19 @@ $fg-link-noexist: #AA88A2;
 
 @mixin sidebar-item {
 	font-size: 18px;
-	text-decoration: none;
+	//text-decoration: none;
 	color: $fg-primary;
 	background-color: inherit;
 	cursor: pointer;
-	padding: 0;
 	border-radius: 0;
+	border-bottom: 2px dotted $bg-secondary-light;
+	margin: 0.5em 0;
+	padding: 0.5em 0;
 
 	&:visited {
 		color: $fg-primary;
 	}
 
-	p {
-		border-bottom: 2px dotted $bg-secondary-light;
-		margin: 0.5em 0;
-		padding: 0.5em 0;
-	}
 }
 
 body {
@@ -139,13 +136,22 @@ input[type="password"] {
 	flex-shrink: 0;
 	padding: 0 24px;
 
+	h1 {
+		margin: 1em 0 0.5em;
+	}
+
 	a {
-		@include sidebar-item;
+		text-decoration: none;
 	}
 
 	& > ul {
 		list-style-type: none;
 		padding: 0;
+
+		a {
+			@include sidebar-item;
+			display: block;
+		}
 	}
 }
 
