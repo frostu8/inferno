@@ -266,7 +266,12 @@ pub async fn post(
             if !is_uri_absolute(&dest_url) {
                 // wikilinks are normalized by markdown::parse, so
                 // un-normalize them here
-                if let Ok(slug) = Slug::new(dest_url.trim_matches('/')) {
+                let dest_url = dest_url
+                    .find('#')
+                    .map(|idx| &dest_url[..idx])
+                    .unwrap_or(&dest_url);
+                let dest_url = dest_url.trim_matches('/');
+                if let Ok(slug) = Slug::new(dest_url) {
                     links.insert(slug);
                 }
             }

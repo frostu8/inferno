@@ -391,9 +391,14 @@ where
                     escape_html(&mut self.writer, &title)?;
                 }
                 self.write("\"")?;
+                let slug = dest_url
+                    .find('#')
+                    .map(|idx| &dest_url[..idx])
+                    .unwrap_or(&dest_url);
+                let slug = slug.trim_matches('/');
                 if !is_absolute
                     && !is_fragment
-                    && Slug::new(dest_url.trim_matches('/'))
+                    && Slug::new(slug)
                         .map(|s| !self.resolved_links.contains(&s))
                         .unwrap_or(true)
                 {
