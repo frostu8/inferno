@@ -1,0 +1,51 @@
+$dropdown-button-color: #FFFFFF !default;
+$dropdown-bg-color: #000000 !default;
+
+@keyframes anim-dropdown {
+  from {
+    height: 0;
+  }
+}
+
+@keyframes anim-undropdown {
+  to {
+    height: 0;
+  }
+}
+
+// JS enhancements
+.nav-dropdown {
+  //padding: 0;
+  //width: max-content;
+  background-color: $dropdown-bg-color;
+  position: absolute;
+  overflow: clip;
+  top: 0;
+  left: 0;
+
+  &.drop {
+    animation: 0.25s ease-in-out anim-dropdown;
+  }
+  &.undrop {
+    animation: 0.25s ease-in-out anim-undropdown;
+  }
+}
+
+.nav-dropdown-reference {
+  display: flex;
+  align-items: center;
+
+  .nav-dropdown-content {
+    flex-grow: 1;
+  }
+}
+
+.nav-dropdown-button {
+  cursor: pointer;
+  color: $dropdown-button_color;
+  transform: rotate(0.25turn);
+}
+
+.nav-dropdown-button.toggled {
+  transform: rotate(0turn);
+}

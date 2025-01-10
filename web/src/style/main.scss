@@ -13,7 +13,13 @@ $fg-accent: #FFF3B0;
 $fg-text-accent: #EE8689;
 $fg-link-noexist: #AA88A2;
 
+@use "../../node_modules/material-symbols/index.scss";
+
 @use "account/login";
+@use "enhancements" with (
+	$dropdown-button-color: $fg-primary,
+	$dropdown-bg-color: $bg-primary
+);
 
 @mixin sidebar-item {
 	font-size: 18px;
@@ -161,7 +167,7 @@ input[type="password"] {
 		}
 	}
 
-	.sidebar-content {
+	#sidebar-content {
 		width: 100%;
 	}
 }

@@ -2,6 +2,7 @@ import {EditorView, basicSetup} from "codemirror";
 import {EditorState} from "@codemirror/state";
 import {markdown} from "@codemirror/lang-markdown";
 import {infernoTheme} from "./theme";
+import {hookDropdowns} from "./sidebar";
 
 import './style/main.scss';
 
@@ -15,6 +16,12 @@ function init() {
 
   if (editor !== null) {
     upgradeEditor(editor);
+  }
+
+  let sidebarContent = document.getElementById("sidebar-content");
+
+  if (sidebarContent !== null) {
+    hookDropdowns(sidebarContent);
   }
 }
 

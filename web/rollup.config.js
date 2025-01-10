@@ -17,7 +17,8 @@ export default {
     sass({ output: `${outputPath}/inferno.css` }),
     copy({
       targets: [
-        { src: 'assets/favicon.ico', dest: outputPath }
+        { src: 'assets/favicon.ico', dest: outputPath },
+        { src: 'node_modules/material-symbols/material-symbols-outlined.woff2', dest: outputPath }
       ]
     }),
     typescript(),
