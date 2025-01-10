@@ -3,6 +3,7 @@ import {autoUpdate, computePosition} from "@floating-ui/dom";
 type Options = {
   visible: boolean,
   width: number,
+  zIndex: number,
   disposeUpdater: (() => void) | null,
 };
 
@@ -15,6 +16,7 @@ export function hookDropdowns(elem: HTMLElement) {
   const options = {
     visible: false,
     width: elem.clientWidth,
+    zIndex: 1,
     disposeUpdater: null
   }
 
@@ -33,6 +35,8 @@ function registerDropdownsRec(elem: HTMLElement, reference: HTMLElement, listDep
       elem.classList.add("nav-dropdown");
       // hide by default
       elem.classList.add("hidden");
+      const childOptions = Object.assign({}, options);
+      childOptions.zIndex += listDepth;
       createDropButton(elem, reference, options);
     }
 
@@ -48,9 +52,7 @@ function registerDropdownsRec(elem: HTMLElement, reference: HTMLElement, listDep
   }
 }
 
-function createDropButton(elem: HTMLElement, reference: HTMLElement, baseOptions: Options) {
-  const options = Object.assign({}, baseOptions);
-
+function createDropButton(elem: HTMLElement, reference: HTMLElement, options: Options) {
   reference.classList.add("nav-dropdown-reference");
 
   // create the actual drop button
@@ -105,6 +107,7 @@ function update(elem: HTMLElement, reference: HTMLElement, options: Options) {
       height: `${elem.scrollHeight}px`,
       left: `${x}px`,
       top: `${y}px`,
+      zIndex: `${options.zIndex}`,
     });
   });
 }
