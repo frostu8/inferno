@@ -23,7 +23,7 @@ $fg-link-noexist: #AA88A2;
 	cursor: pointer;
 	border-radius: 0;
 	border-bottom: 2px dotted $bg-secondary-light;
-	margin: 0.5em 0;
+	margin: 0.25em 0;
 	padding: 0.5em 0;
 
 	&:visited {
@@ -144,8 +144,12 @@ input[type="password"] {
 		text-decoration: none;
 	}
 
-	& > ul {
+	ul {
 		list-style-type: none;
+		padding-left: 2em;
+	}
+
+	& > ul {
 		padding: 0;
 
 		a {

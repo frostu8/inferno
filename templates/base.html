@@ -25,6 +25,9 @@
         {% endif %}
         {% block nav %}{% endblock %}
       </ul>
+      {% if let Some(sidebar) = sidebar %}
+        {{ sidebar.rendered_clean|safe }}
+      {% endif %}
     </nav>
     <main>
       {% block content %}{% endblock %}

@@ -39,6 +39,8 @@ struct ShowPageTemplate {
     pub current_user: Option<CurrentUser>,
     /// The path of the page.
     pub path: Slug,
+    /// The sidebar page content, if there is one.
+    pub sidebar: Option<RenderedPage>,
     /// The actual page content.
     pub page: RenderedPage,
 }
@@ -52,6 +54,8 @@ struct EditPageTemplate {
     pub current_user: Option<CurrentUser>,
     /// The path of the page.
     pub path: Slug,
+    /// The sidebar page content, if there is one.
+    pub sidebar: Option<RenderedPage>,
     /// The data about the page.
     pub page: Page,
 }
@@ -65,10 +69,16 @@ struct ShowNotFound {
     pub current_user: Option<CurrentUser>,
     /// The path of the page.
     pub path: Slug,
+    /// The sidebar page content, if there is one.
+    pub sidebar: Option<RenderedPage>,
 }
 
 struct RenderedPage {
-    pub content_clean: String,
+    #[allow(dead_code)]
+    pub content: String,
+    #[allow(dead_code)]
+    pub latest_change_hash: String,
+    pub rendered_clean: String,
 }
 
 struct Page {
@@ -97,16 +107,23 @@ pub async fn show(
         .into_iter()
         .collect::<HashSet<Slug>>();
 
+    let sidebar = render_sidebar(&universe, &state).await;
+
     if let Some(page) = page {
         let events = markup::parse_markdown(&page.content);
-        let content_clean = markup::to_html(events, links, Some(page.content.len()));
+        let rendered_clean = markup::to_html(events, links, Some(page.content.len()));
 
-        let page = RenderedPage { content_clean };
+        let page = RenderedPage {
+            content: page.content,
+            latest_change_hash: page.latest_change_hash,
+            rendered_clean,
+        };
 
         Ok(HtmlTemplate::new(ShowPageTemplate {
             request_path: uri.path().to_string(),
             current_user: current_user.ok(),
             path,
+            sidebar,
             page,
         })
         .into_response())
@@ -115,6 +132,7 @@ pub async fn show(
             request_path: uri.path().to_string(),
             current_user: current_user.ok(),
             path,
+            sidebar,
         })
         .into_response())
     }
@@ -140,6 +158,8 @@ pub async fn edit(
         .await
         .map_err(log_error)?;
 
+    let sidebar = render_sidebar(&universe, &state).await;
+
     if let Some(crate::schema::page::Page {
         content,
         latest_change_hash,
@@ -149,6 +169,7 @@ pub async fn edit(
             request_path: uri.path().to_string(),
             current_user: Some(current_user),
             path,
+            sidebar,
             page: Page {
                 content,
                 latest_change_hash: Some(latest_change_hash),
@@ -160,6 +181,7 @@ pub async fn edit(
             request_path: uri.path().to_string(),
             current_user: Some(current_user),
             path,
+            sidebar,
             page: Page {
                 content: String::new(),
                 latest_change_hash: None,
@@ -311,6 +333,28 @@ pub async fn post(
         state,
     )
     .await
+}
+
+async fn render_sidebar(universe: &CurrentUniverse, state: &ServerState) -> Option<RenderedPage> {
+    let path = Slug::new("Special:Sidebar").unwrap();
+
+    get_page_content(&state.pool, universe.locate(&path))
+        .await
+        .map_err(log_error)
+        .ok()
+        .and_then(|page| {
+            page.map(|page| {
+                let events = markup::parse_markdown(&page.content);
+                let rendered_clean =
+                    markup::to_html(events, HashSet::new(), Some(page.content.len()));
+
+                RenderedPage {
+                    content: page.content,
+                    latest_change_hash: page.latest_change_hash,
+                    rendered_clean,
+                }
+            })
+        })
 }
 
 mod filters {
