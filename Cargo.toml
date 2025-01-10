@@ -39,12 +39,12 @@ url = "2"
 regex = "1"
 
 [dependencies.pulldown-cmark]
-git = "https://github.com/frostu8/pulldown-cmark"
-branch = "impl-wikilinks"
+git = "https://github.com/pulldown-cmark/pulldown-cmark"
+rev = "e9ce6defb44a1d4b121fb1ffa43da87f7c74541e"
 
 [dependencies.pulldown-cmark-escape]
-git = "https://github.com/frostu8/pulldown-cmark"
-branch = "impl-wikilinks"
+git = "https://github.com/pulldown-cmark/pulldown-cmark"
+rev = "e9ce6defb44a1d4b121fb1ffa43da87f7c74541e"
 
 [build-dependencies]
 eyre = "0.6"
