@@ -3,11 +3,10 @@
 {% block body %}
   <div class="view-content">
     <nav id="sidebar">
-      <h1>~/inferno</h1>
+      <a href="/~/Index">
+        <h1>~/inferno</h1>
+      </a>
       <ul>
-        <li>
-          <a href="/~/Index"><p>To Index</p></a>
-        </li>
         {% if let Some(user) = current_user %}
         <li>
           <form action="/~account/logout" method="post" class="user-digest">
