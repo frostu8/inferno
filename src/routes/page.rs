@@ -9,6 +9,7 @@ use crate::schema::page::{
     get_page_content_for_update, save_change, update_page_content,
 };
 use crate::slug::Slug;
+use crate::universe::CurrentUniverse;
 use crate::{
     markup::{self, is_uri_absolute},
     ServerState,
@@ -81,15 +82,18 @@ struct Page {
 pub async fn show(
     OriginalUri(uri): OriginalUri,
     Path(path): Path<Slug>,
+    universe: Option<CurrentUniverse>,
     current_user: Result<CurrentUser, AccountError>,
     state: State<ServerState>,
 ) -> Result<Response> {
+    let universe_id = universe.as_ref().map(|u| u.id);
+
     // get page content
-    let page = get_page_content(&path, &state.pool)
+    let page = get_page_content(&state.pool, universe_id, &path)
         .await
         .map_err(log_error)?;
 
-    let links = get_existing_links_from(&path, &state.pool)
+    let links = get_existing_links_from(&state.pool, universe_id, &path)
         .await
         .map_err(log_error)?
         .into_iter()
@@ -124,16 +128,19 @@ pub async fn show(
 pub async fn edit(
     OriginalUri(uri): OriginalUri,
     Path(path): Path<Slug>,
+    universe: Option<CurrentUniverse>,
     current_user: Result<CurrentUser, AccountError>,
     state: State<ServerState>,
 ) -> Result<Response> {
+    let universe_id = universe.as_ref().map(|u| u.id);
+
     let Ok(current_user) = current_user else {
         // TODO show flash
         return Ok(Redirect::to(&format!("/~/{}", path)).into_response());
     };
 
     // get page content
-    let page = get_page_content(&path, &state.pool)
+    let page = get_page_content(&state.pool, universe_id, &path)
         .await
         .map_err(log_error)?;
 
@@ -180,10 +187,13 @@ pub struct UpdatePageSource {
 pub async fn post(
     OriginalUri(uri): OriginalUri,
     Path(path): Path<Slug>,
+    universe: Option<CurrentUniverse>,
     current_user: Result<CurrentUser, AccountError>,
     state: State<ServerState>,
     Form(form): Form<UpdatePageSource>,
 ) -> Result<Response> {
+    let universe_id = universe.as_ref().map(|u| u.id);
+
     let Ok(current_user) = current_user else {
         // TODO show flash or unauthorized
         return Ok(Redirect::to(&format!("/~/{}", path)).into_response());
@@ -195,7 +205,7 @@ pub async fn post(
         state.pool.begin().await.map_err(log_error)?
     };
 
-    let old_page = get_page_content_for_update(&path, &mut *tx)
+    let old_page = get_page_content_for_update(&mut *tx, universe_id, &path)
         .await
         .map_err(log_error)?;
 
@@ -213,7 +223,14 @@ pub async fn post(
 
     if old_page.as_ref().map(|c| &c.content) == Some(&form.source) {
         // bail early if the two texts are the exact same
-        return show(OriginalUri(uri), Path(path), Ok(current_user), state).await;
+        return show(
+            OriginalUri(uri),
+            Path(path),
+            universe,
+            Ok(current_user),
+            state,
+        )
+        .await;
     }
 
     let old_source = old_page.as_ref().map(|c| c.content.as_str()).unwrap_or("");
@@ -232,12 +249,12 @@ pub async fn post(
     let changes = dmp.patch_to_text(&patches);
 
     // make update to page content
-    update_page_content(&path, &form.source, &mut *tx)
+    update_page_content(&mut *tx, universe_id, &path, &form.source)
         .await
         .map_err(log_error)?;
 
     // get links in source
-    let old_links = get_links_from(&path, &mut *tx)
+    let old_links = get_links_from(&mut *tx, universe_id, &path)
         .await
         .map_err(log_error)?
         .into_iter()
@@ -259,7 +276,7 @@ pub async fn post(
     for link in links.iter() {
         // if link is missing, add it
         if !old_links.contains(link) {
-            establish_link(&path, link, &mut *tx)
+            establish_link(&mut *tx, universe_id, &path, link)
                 .await
                 .map_err(log_error)?;
         }
@@ -268,21 +285,34 @@ pub async fn post(
     for link in old_links.iter() {
         // if link is now missing, remove it
         if !links.contains(link) {
-            deregister_link(&path, link, &mut *tx)
+            deregister_link(&mut *tx, universe_id, &path, link)
                 .await
                 .map_err(log_error)?;
         }
     }
 
     // add change to db
-    save_change(&path, &current_user.username, &changes, &mut *tx)
-        .await
-        .map_err(log_error)?;
+    save_change(
+        &mut *tx,
+        universe_id,
+        &path,
+        &current_user.username,
+        &changes,
+    )
+    .await
+    .map_err(log_error)?;
 
     // commit changes
     tx.commit().await.map_err(log_error)?;
 
-    show(OriginalUri(uri), Path(path), Ok(current_user), state).await
+    show(
+        OriginalUri(uri),
+        Path(path),
+        universe,
+        Ok(current_user),
+        state,
+    )
+    .await
 }
 
 mod filters {

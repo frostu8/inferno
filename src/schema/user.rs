@@ -4,6 +4,8 @@ use sqlx::{Executor, Postgres};
 
 use chrono::Utc;
 
+use tracing::instrument;
+
 /// A full user record.
 #[derive(Clone, Debug, sqlx::FromRow)]
 pub struct User {
@@ -20,6 +22,7 @@ pub struct PasswordLogin {
 }
 
 /// Gets information about a user by username.
+#[instrument]
 pub async fn get_user<'c, E>(db: E, username: &str) -> Result<Option<User>, sqlx::Error>
 where
     E: Executor<'c, Database = Postgres>,
@@ -37,6 +40,7 @@ where
 }
 
 /// Fetches the password login of a user.
+#[instrument]
 pub async fn get_password_login<'c, E>(
     db: E,
     username: &str,
