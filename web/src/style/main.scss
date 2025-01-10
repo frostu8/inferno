@@ -135,8 +135,10 @@ input[type="password"] {
 	flex-basis: 300px;
 	flex-shrink: 0;
 	padding: 0 24px;
+	word-break: break-word;
 
 	h1 {
+		color: $fg-primary;
 		margin: 1em 0 0.5em;
 	}
 
@@ -146,21 +148,22 @@ input[type="password"] {
 
 	ul {
 		list-style-type: none;
-		padding-left: 2em;
-	}
-
-	& > ul {
+		// top leve should have no padding
 		padding: 0;
+
+		ul {
+			padding-left: 2em;
+		}
 
 		a {
 			@include sidebar-item;
 			display: block;
 		}
 	}
-}
 
-#sidebar h1 {
-	color: $fg-primary;
+	.sidebar-content {
+		width: 100%;
+	}
 }
 
 .user-digest {
