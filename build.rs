@@ -1,7 +1,9 @@
 #[cfg(feature = "build-web")]
+use eyre::{Report, WrapErr};
+
+#[cfg(feature = "build-web")]
 fn main() -> Result<(), Report> {
     use color_eyre::{Section, SectionExt};
-    use eyre::{Report, WrapErr};
 
     use std::env;
     use std::ffi::OsStr;

@@ -17,23 +17,32 @@ $dropdown-bg-color: #000000 !default;
 .nav-dropdown {
   //padding: 0;
   //width: max-content;
-  background-color: $dropdown-bg-color;
-  position: absolute;
+  //background-color: $dropdown-bg-color;
+  //position: absolute;
   overflow: clip;
-  top: 0;
-  left: 0;
+  display: none;
+  //top: 0;
+  //left: 0;
 
   &.drop {
+    display: block;
     animation: 0.25s ease-in-out anim-dropdown;
   }
   &.undrop {
+    display: block;
     animation: 0.25s ease-in-out anim-undropdown;
   }
 }
 
 .nav-dropdown-reference {
   display: flex;
+  flex-flow: row wrap;
   align-items: center;
+
+  .nav-dropdown {
+    width: calc(100% - 2em);
+    order: 1;
+  }
 
   .nav-dropdown-content {
     flex-grow: 1;

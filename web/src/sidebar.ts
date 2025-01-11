@@ -1,10 +1,6 @@
-import {autoUpdate, computePosition} from "@floating-ui/dom";
-
 type Options = {
   visible: boolean,
-  width: number,
-  zIndex: number,
-  disposeUpdater: (() => void) | null,
+  width: number
 };
 
 /**
@@ -16,8 +12,7 @@ export function hookDropdowns(elem: HTMLElement) {
   const options = {
     visible: false,
     width: elem.clientWidth,
-    zIndex: 1,
-    disposeUpdater: null
+    zIndex: 1
   }
 
   for (const child of elem.children) {
@@ -32,11 +27,9 @@ function registerDropdownsRec(elem: HTMLElement, reference: HTMLElement, listDep
   if (elem.tagName === "UL") {
     // register dropdown
     if (!elem.classList.contains("nav-dropdown") && listDepth > 0) {
+      Object.assign(elem.style, { height: `${elem.scrollHeight + 8}px` });
       elem.classList.add("nav-dropdown");
-      // hide by default
-      elem.classList.add("hidden");
-      const childOptions = Object.assign({}, options);
-      childOptions.zIndex += listDepth;
+
       createDropButton(elem, reference, options);
     }
 
@@ -52,7 +45,9 @@ function registerDropdownsRec(elem: HTMLElement, reference: HTMLElement, listDep
   }
 }
 
-function createDropButton(elem: HTMLElement, reference: HTMLElement, options: Options) {
+function createDropButton(elem: HTMLElement, reference: HTMLElement, baseOptions: Options) {
+  const options = { ...baseOptions };
+
   reference.classList.add("nav-dropdown-reference");
 
   // create the actual drop button
@@ -65,25 +60,20 @@ function createDropButton(elem: HTMLElement, reference: HTMLElement, options: Op
     options.visible = !options.visible;
 
     if (options.visible) {
-      // create updater
       button.classList.add("toggled");
-      elem.classList.remove("hidden");
+
       elem.classList.add("drop");
-      elem.classList.remove("undrop");
-      options.disposeUpdater = autoUpdate(elem, reference, () => {
-        update(elem, reference, options);
-      });
     } else {
       button.classList.remove("toggled");
-      elem.classList.add("undrop");
+
       elem.classList.remove("drop");
+      elem.classList.add("undrop");
+
       const disposer = () => {
-        elem.classList.add("hidden");
-        if (options.disposeUpdater !== null) {
-          options.disposeUpdater();
-        }
+        elem.classList.remove("undrop");
         elem.removeEventListener("animationend", disposer);
       };
+
       elem.addEventListener("animationend", disposer);
     }
   });
@@ -98,16 +88,4 @@ function createDropButton(elem: HTMLElement, reference: HTMLElement, options: Op
 
   reference.appendChild(content);
   reference.appendChild(button);
-}
-
-function update(elem: HTMLElement, reference: HTMLElement, options: Options) {
-  computePosition(reference, elem).then(({x, y}) => {
-    Object.assign(elem.style, {
-      width: `calc(${options.width}px - 2em)`,
-      height: `${elem.scrollHeight}px`,
-      left: `${x}px`,
-      top: `${y}px`,
-      zIndex: `${options.zIndex}`,
-    });
-  });
 }
