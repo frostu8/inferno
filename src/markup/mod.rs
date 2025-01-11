@@ -132,7 +132,7 @@ where
         if !in_whitespace && !ch.is_alphanumeric() {
             in_whitespace = true;
             result.push_str(&id[mark..i]);
-        } else if in_whitespace && !ch.is_whitespace() {
+        } else if in_whitespace && ch.is_alphanumeric() {
             result.push('-');
             mark = i;
             in_whitespace = false;
@@ -162,13 +162,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_normalize_heading_id() {
-        assert_eq!(&normalize_heading_id("The Heading"), "the-heading");
+    fn normalize_heading() {
+        assert_eq!(&normalize_heading_id("The Heading"), "heading-the-heading");
         assert_eq!(
             &normalize_heading_id("pepperoni-secret"),
-            "pepperoni-secret"
+            "heading-pepperoni-secret"
         );
 
-        assert_eq!(&normalize_heading_id("Hi There!"), "hi-there");
+        assert_eq!(&normalize_heading_id("Hi There!"), "heading-hi-there");
+    }
+
+    #[test]
+    fn normalize_heading_with_symbols() {
+        assert_eq!(
+            &normalize_heading_id("Vanguard \"Natalia\""),
+            "heading-vanguard-natalia"
+        );
     }
 }
