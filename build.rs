@@ -1,13 +1,14 @@
-use color_eyre::{Section, SectionExt};
-use eyre::{Report, WrapErr};
-
-use std::env;
-use std::ffi::OsStr;
-use std::fs::read_dir;
-use std::path::PathBuf;
-use std::process::Command;
-
+#[cfg(feature = "build-web")]
 fn main() -> Result<(), Report> {
+    use color_eyre::{Section, SectionExt};
+    use eyre::{Report, WrapErr};
+
+    use std::env;
+    use std::ffi::OsStr;
+    use std::fs::read_dir;
+    use std::path::PathBuf;
+    use std::process::Command;
+
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").map(PathBuf::from).unwrap();
 
     let webpack_dir = manifest_dir.join("web");
@@ -40,3 +41,6 @@ fn main() -> Result<(), Report> {
 
     Ok(())
 }
+
+#[cfg(not(feature = "build-web"))]
+fn main() {}

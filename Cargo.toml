@@ -49,3 +49,6 @@ rev = "25f2806168bebab089da001a2f45087e0e84bbf1"
 [build-dependencies]
 eyre = "0.6"
 color-eyre = "0.6"
+
+[features]
+build-web = []
