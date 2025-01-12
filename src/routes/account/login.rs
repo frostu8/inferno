@@ -3,9 +3,9 @@
 use axum::extract::{Form, Query, State};
 use axum::response::{IntoResponse, Redirect, Response, Result};
 
-use crate::account::{grant_token, Claims, CurrentUser, Error as AccountError};
+use crate::account::{session, CurrentUser, Error as AccountError};
+use crate::crypto::hash_password;
 use crate::html::HtmlTemplate;
-use crate::passwords::hash_password;
 use crate::routes::log_error;
 use crate::schema::user::get_password_login;
 use crate::ServerState;
@@ -13,8 +13,6 @@ use crate::ServerState;
 use serde::Deserialize;
 
 use http::header::{self, HeaderValue};
-
-use chrono::Utc;
 
 use cookie::{Cookie, SameSite};
 
@@ -85,32 +83,40 @@ pub async fn post(
         let hashed_password = hash_password(&form.password, &login.salt);
 
         if hashed_password == login.password_hash {
-            let exp = (Utc::now().naive_utc() + chrono::naive::Days::new(1))
-                .and_utc()
-                .timestamp() as usize;
+            // establish session
+            let (claims, refresh_key) = session::establish(&state, &form.username)
+                .await
+                .map_err(log_error)?;
+            let token = claims.encode(&state.keys).map_err(log_error)?;
 
-            let claims = Claims {
-                sub: "frostu8".to_string(),
-                exp,
-            };
+            // creat response
+            let mut response = Redirect::to(&redirect_to).into_response();
 
-            let token = grant_token(&state.keys, &claims).map_err(log_error)?;
-
-            // set cookie
-            let cookie = Cookie::build(("auth", token))
+            // set ACCESS_TOKEN_NAME cookie
+            let cookie = Cookie::build((crate::account::ACCESS_TOKEN_NAME, token))
                 .path("/")
                 .expires(Some(
-                    cookie::time::OffsetDateTime::from_unix_timestamp(exp as i64).unwrap(),
+                    cookie::time::OffsetDateTime::from_unix_timestamp(claims.exp() as i64).unwrap(),
                 ))
                 .same_site(SameSite::Strict);
-
             #[cfg(not(debug_assertions))]
             let cookie = cookie.secure(true);
-
             let cookie = HeaderValue::from_str(&cookie.to_string()).map_err(log_error)?;
+            response.headers_mut().append(header::SET_COOKIE, cookie);
 
-            let mut response = Redirect::to(&redirect_to).into_response();
-            response.headers_mut().insert(header::SET_COOKIE, cookie);
+            // set REFRESH_TOKEN_NAME cookie
+            let cookie = Cookie::build((crate::account::REFRESH_TOKEN_NAME, refresh_key))
+                .path("/")
+                .expires(Some(
+                    cookie::time::OffsetDateTime::now_utc() + cookie::time::Duration::days(90),
+                ))
+                .same_site(SameSite::Strict)
+                .http_only(true);
+            #[cfg(not(debug_assertions))]
+            let cookie = cookie.secure(true);
+            let cookie = HeaderValue::from_str(&cookie.to_string()).map_err(log_error)?;
+            response.headers_mut().append(header::SET_COOKIE, cookie);
+
             Ok(response)
         } else {
             // no login with the username found

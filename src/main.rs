@@ -4,6 +4,7 @@ use color_eyre::Section;
 use eyre::{Report, WrapErr};
 
 use inferno::{
+    account::refresh_session_middleware,
     cli::{Cli, ShouldContinue},
     read_config, routes, ServerState,
 };
@@ -46,6 +47,10 @@ async fn main() -> Result<(), Report> {
 
     let static_dir = ServeDir::new(&state.static_files_dir);
     let routes = routes::all()
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            refresh_session_middleware,
+        ))
         .with_state(state)
         .fallback_service(static_dir)
         .layer(TraceLayer::new_for_http());

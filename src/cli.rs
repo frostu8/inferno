@@ -1,7 +1,7 @@
 //! General server-only types and functions.
 
 use crate::{
-    passwords,
+    crypto,
     schema::{
         universe::{create_universe, CreateUniverse as CreateUniverseSchema},
         user,
@@ -115,10 +115,10 @@ pub async fn create_user_with_password(
     password: &str,
 ) -> Result<(), sqlx::Error> {
     // generate login
-    let salt = passwords::generate_salt(passwords::SALT_LENGTH);
+    let salt = crypto::generate_salt(crypto::SALT_LENGTH);
 
     // hash password
-    let hashed = passwords::hash_password(password, &salt);
+    let hashed = crypto::hash_password(password, &salt);
 
     // create user account
     let user = user::create_user(db, username).await?;
