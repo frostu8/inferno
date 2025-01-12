@@ -19,8 +19,8 @@ use crate::ServerState;
 pub fn all() -> Router<ServerState> {
     Router::new()
         .nest("/~account", account())
-        .route("/~/{*path}", get(page::show).post(page::post))
-        .route("/~edit/{*path}", get(page::edit))
+        .route("/~/{*path}", get(page::show))
+        .route("/~edit/{*path}", get(page::edit).post(page::post))
         .route("/", get(redirect_stray))
         .route("/~", get(redirect_stray))
         .route("/~/", get(redirect_stray))

@@ -209,10 +209,10 @@ pub async fn post(
     current_user: Result<CurrentUser, AccountError>,
     state: State<ServerState>,
     Form(form): Form<UpdatePageSource>,
-) -> Result<Response> {
+) -> Result<Redirect> {
     let Ok(current_user) = current_user else {
         // TODO show flash or unauthorized
-        return Ok(Redirect::to(&format!("/~/{}", path)).into_response());
+        return Ok(Redirect::to(&format!("/~/{}", path)));
     };
 
     // Begin transaction for reading things from the db.
@@ -228,25 +228,18 @@ pub async fn post(
     if let Some(last_change) = old_page.as_ref().map(|c| &c.latest_change_hash) {
         let Some(form_hash) = form.latest_change_hash.as_ref() else {
             // TODO show flash
-            return Ok(Redirect::to(&format!("/~/{}", path)).into_response());
+            return Ok(Redirect::to(&format!("/~/{}", path)));
         };
 
         if last_change != form_hash {
             // TODO show flash
-            return Ok(Redirect::to(&format!("/~/{}", path)).into_response());
+            return Ok(Redirect::to(&format!("/~/{}", path)));
         }
     }
 
     if old_page.as_ref().map(|c| &c.content) == Some(&form.source) {
         // bail early if the two texts are the exact same
-        return show(
-            OriginalUri(uri),
-            Path(path),
-            universe,
-            Ok(current_user),
-            state,
-        )
-        .await;
+        return Ok(Redirect::to(&format!("/~/{}", path)));
     }
 
     let old_source = old_page.as_ref().map(|c| c.content.as_str()).unwrap_or("");
@@ -325,14 +318,7 @@ pub async fn post(
     // commit changes
     tx.commit().await.map_err(log_error)?;
 
-    show(
-        OriginalUri(uri),
-        Path(path),
-        universe,
-        Ok(current_user),
-        state,
-    )
-    .await
+    Ok(Redirect::to(&format!("/~/{}", path)))
 }
 
 async fn render_sidebar(universe: &CurrentUniverse, state: &ServerState) -> Option<RenderedPage> {
