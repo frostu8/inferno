@@ -12,6 +12,7 @@ $fg-accent: #FFF3B0;
 // different link color accessibility
 $fg-text-accent: #EE8689;
 $fg-link-noexist: #AA88A2;
+$fg-link-external: #646E68;
 
 @use "../../node_modules/material-symbols/index.scss";
 
@@ -246,4 +247,11 @@ blockquote {
 
 a.noexist {
 	color: $fg-link-noexist;
+}
+
+a.external-link {
+	span.material-symbols-outlined {
+		font-size: inherit;
+		color: $fg-link-external;
+	}
 }

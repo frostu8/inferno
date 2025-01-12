@@ -23,6 +23,15 @@ function init() {
   if (sidebarContent !== null) {
     hookDropdowns(sidebarContent);
   }
+
+  // tag all external links
+  for (const elem of document.querySelectorAll("a.external-link")) {
+    const icon = document.createElement("span");
+    icon.classList.add("material-symbols-outlined");
+    icon.textContent = "open_in_new";
+
+    elem.appendChild(icon);
+  }
 }
 
 /**

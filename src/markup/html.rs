@@ -378,32 +378,39 @@ where
                 title,
                 id: _,
             } => {
-                let is_top_relative = dest_url.starts_with('/');
-                let is_fragment = dest_url.starts_with('#');
                 let is_absolute = is_uri_absolute(&dest_url);
+
                 self.write("<a href=\"")?;
-                if !is_absolute && !is_fragment && is_top_relative {
+
+                if !is_absolute && dest_url.starts_with('/') {
                     self.write("/~")?;
                 }
+
                 escape_href(&mut self.writer, &dest_url)?;
                 if !title.is_empty() {
                     self.write("\" title=\"")?;
                     escape_html(&mut self.writer, &title)?;
                 }
                 self.write("\"")?;
+
                 let slug = dest_url
                     .find('#')
                     .map(|idx| &dest_url[..idx])
                     .unwrap_or(&dest_url);
                 let slug = slug.trim_matches('/');
+
                 if !is_absolute
-                    && !is_fragment
+                    // link could be a interlink fragment
+                    && !dest_url.starts_with('#')
                     && Slug::new(slug)
                         .map(|s| !self.resolved_links.contains(&s))
                         .unwrap_or(true)
                 {
                     self.write(" class=\"noexist\"")?;
+                } else if is_absolute {
+                    self.write(" class=\"external-link\"")?;
                 }
+
                 self.write(">")
             }
             Tag::Image {
