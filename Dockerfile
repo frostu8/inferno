@@ -18,7 +18,7 @@ RUN npm install
 # Go back and build server
 WORKDIR /work
 
-RUN cargo build --release
+RUN cargo build --release --features build-web
 
 FROM rustlang/rust:nightly-alpine AS runner
 
