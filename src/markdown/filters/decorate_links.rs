@@ -44,9 +44,7 @@ where
     type Item = Event<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let Some(ev) = self.inner.next() else {
-            return None;
-        };
+        let ev = self.inner.next()?;
 
         let ev = match ev {
             Start(Tag::Link {
@@ -70,7 +68,7 @@ where
                     html.push_str("\" title=\"");
                     escape_html(&mut html, &title).unwrap();
                 }
-                html.push_str("\"");
+                html.push('"');
 
                 let mut classes = AnchorClassWriter::new(&mut html);
 
@@ -98,7 +96,7 @@ where
 
                 classes.finish();
 
-                html.push_str(">");
+                html.push('>');
 
                 Html(html.into())
             }
@@ -124,7 +122,7 @@ impl<'a> AnchorClassWriter<'a> {
 
     pub fn add(&mut self, class: &str) {
         if self.classes > 0 {
-            self.out.push_str(" ");
+            self.out.push(' ');
         } else {
             self.out.push_str(" class=\"");
         }
@@ -136,7 +134,7 @@ impl<'a> AnchorClassWriter<'a> {
 
     pub fn finish(self) {
         if self.classes > 0 {
-            self.out.push_str("\"");
+            self.out.push('"');
         }
     }
 }

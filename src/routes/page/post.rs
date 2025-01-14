@@ -68,7 +68,7 @@ pub async fn handler(
             .wrap_err("failed to start transaction")?
     };
 
-    let old_page = get_page_content_for_update(&mut *tx, universe.locate(&path))
+    let old_page = get_page_content_for_update(&mut *tx, universe.locate(path))
         .await
         .wrap_err("failed to get page content")?;
 
@@ -103,12 +103,12 @@ pub async fn handler(
     let changes = dmp.patch_to_text(&patches);
 
     // make update to page content
-    update_page_content(&mut *tx, universe.locate(&path), &form.source)
+    update_page_content(&mut *tx, universe.locate(path), &form.source)
         .await
         .wrap_err("failed to update page content")?;
 
     // get links in source
-    let old_links = get_links_from(&mut *tx, universe.locate(&path))
+    let old_links = get_links_from(&mut *tx, universe.locate(path))
         .await
         .wrap_err("failed to get links from page")?
         .into_iter()
@@ -135,7 +135,7 @@ pub async fn handler(
     for link in links.iter() {
         // if link is missing, add it
         if !old_links.contains(link) {
-            establish_link(&mut *tx, universe.locate(&path), link)
+            establish_link(&mut *tx, universe.locate(path), link)
                 .await
                 .wrap_err("failed to establish link")?;
         }
@@ -144,7 +144,7 @@ pub async fn handler(
     for link in old_links.iter() {
         // if link is now missing, remove it
         if !links.contains(link) {
-            deregister_link(&mut *tx, universe.locate(&path), link)
+            deregister_link(&mut *tx, universe.locate(path), link)
                 .await
                 .wrap_err("failed to deregister link")?;
         }
@@ -153,7 +153,7 @@ pub async fn handler(
     // add change to db
     save_change(
         &mut *tx,
-        universe.locate(&path),
+        universe.locate(path),
         &current_user.username,
         &changes,
     )
