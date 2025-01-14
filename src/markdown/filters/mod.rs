@@ -1,8 +1,10 @@
 //! `pulldown-cmark` filters included in the inferno binary.
 
+mod decorate_links;
 mod shorten_wikitext;
 mod tag_headings;
 
+pub use decorate_links::*;
 pub use shorten_wikitext::*;
 pub use tag_headings::*;
 
@@ -22,6 +24,13 @@ where
     /// potholed.
     fn shorten_wikitext(self) -> ShortenWikiText<'a, Self> {
         ShortenWikiText::new(self)
+    }
+
+    /// Decorates links with classes.
+    ///
+    /// This is destructive! See [`DecorateLinks`] for more.
+    fn decorate_links(self) -> DecorateLinks<Self> {
+        DecorateLinks::new(self)
     }
 }
 

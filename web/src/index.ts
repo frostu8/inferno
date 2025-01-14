@@ -62,16 +62,22 @@ export function upgradeEditor(textArea: HTMLTextAreaElement) {
     }
   });
 
+  let extensions = [
+    basicSetup,
+    markdown(),
+    EditorView.lineWrapping,
+    infernoTheme,
+    syncText
+  ];
+
+  if (textArea.disabled) {
+    extensions.push(EditorState.readOnly.of(true));
+  }
+
   // initialize start state
   let startState = EditorState.create({
     doc: textArea.textContent || "",
-    extensions: [
-      basicSetup,
-      markdown(),
-      EditorView.lineWrapping,
-      infernoTheme,
-      syncText
-    ]
+    extensions
   });
 
   // create editor

@@ -14,20 +14,20 @@
               Signed in as
               <span class="username">{{ user.username }}</span>
             </p>
-            <input type="hidden" name="redirect_to" value="{{ request_path }}">
+            <input type="hidden" name="redirect_to" value="{{ request_uri }}">
             <input class="sidebar-item" type="submit" value="Logout">
           </form>
         </li>
         {% else %}
         <li>
-          <a href="/~account/login?redirect_to={{ request_path|urlencode }}">Login</a>
+          <a href="/~account/login?redirect_to={{ request_uri|urlencode }}">Login</a>
         </li>
         {% endif %}
         {% block nav %}{% endblock %}
       </ul>
       {% if let Some(sidebar) = sidebar %}
         <div id="sidebar-content">
-          {{ sidebar.rendered_clean|safe }}
+          {{ sidebar.rendered()|safe }}
         </div>
       {% endif %}
     </nav>

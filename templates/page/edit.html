@@ -1,7 +1,10 @@
 {% extends "../base.html" %}
 
 {% block head %}
-  <title>Editing {{ path|title }}</title>
+  <title>
+    {% if read_only %}Viewing{% else %}Editing{% endif %}
+    {{ path|title }}
+  </title>
 {% endblock %}
 
 {% block nav %}
@@ -15,15 +18,30 @@
 {% endblock %}
 
 {% block content %}
-  <h1 class="title">Editing {{ path|title }}</h1>
+  <h1 class="title">
+    {% if read_only %}Viewing{% else %}Editing{% endif %}
+    {{ path|title }}
+  </h1>
   <hr>
-  <form class="editor" action="/~edit/{{ path }}" method="post">
-    <div class="page-admin">
-      <input type="submit" value="Save Changes">
-    </div>
-    <textarea id="page-source" name="source" rows="40">
+  <form class="editor" action="/~/{{ path }}" method="post">
+    <textarea
+      id="page-source" name="source" rows="40"
+      {% if current_user.is_none() || read_only %}disabled="true"{% endif %}
+    >
       {{- page.content -}}
     </textarea>
+    {% if read_only %}
+      {% if current_user.is_none() %}
+        <p>
+          You may view the source of this page, but you <strong>cannot make any
+          changes</strong> until you are <a href="/~account/login">logged in</a>.
+        </p>
+      {% endif %}
+    {% else %}
+      <div class="page-admin">
+        <input type="submit" value="Save Changes">
+      </div>
+    {% endif %}
     {% if let Some(hash) = page.latest_change_hash %}
       <input type="hidden" name="latest_change_hash" value="{{ hash }}">
     {% endif %}

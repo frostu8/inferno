@@ -1,9 +1,6 @@
 //! Page rendering markup.
 
 pub mod filters;
-mod html;
-
-pub use html::*;
 
 use filters::FiltersExt as _;
 
@@ -17,7 +14,7 @@ use pulldown_cmark::{
 pub const HEADING_ID_PREFIX: &str = "heading-";
 
 /// Creates a Markdown token stream from content.
-pub fn parse_markdown(content: &str) -> impl Iterator<Item = Event> {
+pub fn parse(content: &str) -> impl Iterator<Item = Event> {
     Parser::new_ext(
         content,
         Options::ENABLE_FOOTNOTES

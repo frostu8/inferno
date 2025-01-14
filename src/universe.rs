@@ -1,14 +1,14 @@
 //! Request context extractors.
 
-use std::fmt::{self, Display, Formatter};
 use std::ops::Deref;
 
-use axum::body::Body;
 use axum::extract::{FromRef, FromRequestParts};
-use axum::response::{IntoResponse, Response};
 
-use http::{header, request::Parts, StatusCode};
+use http::{header, request::Parts};
 
+use eyre::WrapErr;
+
+use crate::error::ServerError;
 use crate::schema::universe::{get_global_universe, get_universe_by_host};
 use crate::slug::Slug;
 use crate::ServerState;
@@ -52,7 +52,7 @@ where
     ServerState: FromRef<S>,
     S: Send + Sync,
 {
-    type Rejection = Error;
+    type Rejection = ServerError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let state = ServerState::from_ref(state);
@@ -68,7 +68,7 @@ where
             // search for host in database
             let universe = get_universe_by_host(&state.pool, host)
                 .await
-                .map_err(Error::Db)?;
+                .wrap_err_with(|| format!("failed to get universe for host \"{}\"", host))?;
 
             if let Some(universe) = universe {
                 Ok(CurrentUniverse(universe))
@@ -76,13 +76,15 @@ where
                 get_global_universe(&state.pool)
                     .await
                     .map(CurrentUniverse)
-                    .map_err(Error::Db)
+                    .wrap_err("failed to get global universe")
+                    .map_err(ServerError::from)
             }
         } else {
             get_global_universe(&state.pool)
                 .await
                 .map(CurrentUniverse)
-                .map_err(Error::Db)
+                .wrap_err("failed to get global universe")
+                .map_err(ServerError::from)
         }
     }
 }
@@ -92,42 +94,5 @@ impl Deref for CurrentUniverse {
 
     fn deref(&self) -> &Self::Target {
         &self.0
-    }
-}
-
-/// An error that can occur during extraction of [`CurrentUniverse`].
-#[derive(Debug)]
-pub enum Error {
-    /// No host header passed.
-    //NoHost,
-    /// Invalid host header.
-    //InvalidHost(String),
-    /// Something wrong happened when accessing the database.
-    Db(sqlx::Error),
-}
-
-impl Display for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            //Error::NoHost => f.write_str("no Host header"),
-            //Error::InvalidHost(host) => write!(f, "Host {} not a universe", host),
-            Error::Db(err) => Display::fmt(err, f),
-        }
-    }
-}
-
-impl std::error::Error for Error {}
-
-impl IntoResponse for Error {
-    fn into_response(self) -> Response {
-        let status = match self {
-            //Error::NoHost | Error::InvalidHost(..) => StatusCode::BAD_REQUEST,
-            Error::Db(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        };
-
-        Response::builder()
-            .status(status)
-            .body(Body::empty())
-            .unwrap()
     }
 }

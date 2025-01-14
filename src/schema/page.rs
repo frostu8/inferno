@@ -17,6 +17,7 @@ use crate::universe::Locator;
 /// Result of [`get_page_content`] and [`get_page_for_update`].
 #[derive(sqlx::FromRow)]
 pub struct Page {
+    pub path: Slug,
     pub content: String,
     pub latest_change_hash: String,
 }
@@ -32,7 +33,7 @@ where
 {
     sqlx::query_as(
         r#"
-        SELECT p.content, c.hash AS latest_change_hash
+        SELECT p.path, p.content, c.hash AS latest_change_hash
         FROM pages p
         RIGHT JOIN changes c ON c.page_id = p.id
         WHERE
@@ -62,7 +63,7 @@ where
 {
     sqlx::query_as(
         r#"
-        SELECT p.content, c.hash AS latest_change_hash
+        SELECT p.path, p.content, c.hash AS latest_change_hash
         FROM pages p
         RIGHT JOIN changes c ON c.page_id = p.id
         WHERE

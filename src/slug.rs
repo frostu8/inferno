@@ -36,7 +36,8 @@ use serde::{
 /// This type gaurantees any string held within it does not contain any
 /// whitespace, and that it isn't empty.
 #[repr(transparent)]
-#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, sqlx::Type)]
+#[sqlx(transparent)]
 pub struct Slug(String);
 
 impl Slug {

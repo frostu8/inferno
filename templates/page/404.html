@@ -7,7 +7,7 @@
 {% block nav %}
   {% if let Some(user) = current_user %}
     <li>
-      <a href="/~edit/{{ path }}">
+      <a href="/~/{{ path }}?action=edit">
         Create <strong>this</strong> page
       </a>
     </li>
@@ -21,7 +21,7 @@
     <p>
       This page does not exist.
       {% if let Some(user) = current_user %}
-        You can create it <a href="/~edit/{{ path }}">here</a>.
+        You can create it <a href="/~/{{ path }}?action=edit">here</a>.
       {% endif %}
     </p>
   </div>
