@@ -27,7 +27,7 @@ impl From<Report> for ServerError {
 /// This creates an error report when this implementation is called.
 impl IntoResponse for ServerError {
     fn into_response(self) -> Response {
-        error!("{}", self.inner);
+        error!("{:?}", self.inner);
 
         (
             StatusCode::INTERNAL_SERVER_ERROR,
