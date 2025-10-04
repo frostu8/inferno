@@ -21,7 +21,7 @@ ammonia = "4"
 
 # For config
 figment = { version = "0.10.19", features = ["env", "toml"] }
-sqlx = { version = "0.8", features = ["runtime-tokio", "tls-native-tls", "postgres", "chrono", "sqlite"] }
+sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "chrono", "sqlite", "tls-rustls"] }
 serde = { version = "1.0", features = ["derive"] }
 rand = "0.8"
 base16 = "0.2"
