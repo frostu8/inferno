@@ -20,7 +20,8 @@ pub fn parse(content: &str) -> impl Iterator<Item = Event<'_>> {
         Options::ENABLE_FOOTNOTES
             | Options::ENABLE_TABLES
             | Options::ENABLE_WIKILINKS
-            | Options::ENABLE_SMART_PUNCTUATION,
+            | Options::ENABLE_SMART_PUNCTUATION
+            | Options::ENABLE_STRIKETHROUGH,
     )
     .map(|ev| {
         if let Start(Tag::Link {
