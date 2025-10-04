@@ -19,6 +19,10 @@ http = "1"
 askama = "0.12"
 ammonia = "4"
 
+# Markdown
+pulldown-cmark = "0.13"
+pulldown-cmark-escape = "0.13"
+
 # For config
 figment = { version = "0.10.19", features = ["env", "toml"] }
 sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "chrono", "sqlite", "tls-rustls"] }
@@ -37,14 +41,6 @@ diff-match-patch-rs = "0.3.2"
 url-escape = "0.1"
 url = "2"
 regex = "1"
-
-[dependencies.pulldown-cmark]
-git = "https://github.com/pulldown-cmark/pulldown-cmark"
-rev = "25f2806168bebab089da001a2f45087e0e84bbf1"
-
-[dependencies.pulldown-cmark-escape]
-git = "https://github.com/pulldown-cmark/pulldown-cmark"
-rev = "25f2806168bebab089da001a2f45087e0e84bbf1"
 
 [build-dependencies]
 eyre = "0.6"

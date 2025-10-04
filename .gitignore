@@ -24,3 +24,5 @@ Cargo.lock
 
 # ignore testing database
 /dev.sqlite
+/dev.sqlite-shm
+/dev.sqlite-wal
