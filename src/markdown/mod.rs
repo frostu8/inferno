@@ -14,7 +14,7 @@ use pulldown_cmark::{
 pub const HEADING_ID_PREFIX: &str = "heading-";
 
 /// Creates a Markdown token stream from content.
-pub fn parse(content: &str) -> impl Iterator<Item = Event> {
+pub fn parse(content: &str) -> impl Iterator<Item = Event<'_>> {
     Parser::new_ext(
         content,
         Options::ENABLE_FOOTNOTES

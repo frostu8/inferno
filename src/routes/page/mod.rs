@@ -121,7 +121,7 @@ pub struct RenderedPage {
 
 impl RenderedPage {
     /// Starts the rendering of a page.
-    pub fn build(page: &Page) -> Renderer {
+    pub fn build(page: &Page) -> Renderer<'_> {
         Renderer::new(page)
     }
 

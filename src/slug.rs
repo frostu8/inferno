@@ -134,7 +134,7 @@ impl Slug {
 
     /// Gets the title of a slug by getting the last segment and replacing
     /// underscores with ASCII spaces.
-    pub fn title(&self) -> Cow<str> {
+    pub fn title(&self) -> Cow<'_, str> {
         let title = match self.as_str().rfind('/') {
             Some(idx) => &self.as_str()[idx + 1..],
             None => self.as_str(),
