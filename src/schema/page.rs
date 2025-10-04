@@ -208,15 +208,14 @@ where
 {
     sqlx::query(
         r#"
-        DELETE FROM links l
-        USING (
-            SELECT id
-            FROM pages
-            WHERE slug = $1
-        ) AS p
+        DELETE FROM links
         WHERE
-            l.source_id = p.id AND
-            l.dest_slug = $2
+            source_id IN (
+                SELECT id
+                FROM pages
+                WHERE slug = $1
+            ) AND
+            dest_slug = $2
         "#,
     )
     .bind(from.as_str())
