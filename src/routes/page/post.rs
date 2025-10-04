@@ -4,11 +4,10 @@ use crate::{
     error::ServerError,
     markdown::{self, is_uri_absolute},
     schema::page::{
-        deregister_link, establish_link, get_links_from, get_page_content_for_update, save_change,
+        deregister_link, establish_link, get_links_from, get_page_content, save_change,
         update_page_content,
     },
     slug::Slug,
-    universe::CurrentUniverse,
     ServerState,
 };
 
@@ -45,7 +44,6 @@ pub struct UpdatePage {
 #[cfg_attr(debug_assertions, axum::debug_handler)]
 pub async fn handler(
     context: Context,
-    universe: CurrentUniverse,
     state: State<ServerState>,
     Form(form): Form<UpdatePage>,
 ) -> Result<Response, ServerError> {
@@ -55,7 +53,7 @@ pub async fn handler(
 
     let Ok(current_user) = current_user else {
         // TODO show flash or unauthorized
-        return show(context, Query(QueryParams::default()), universe, state).await;
+        return show(context, Query(QueryParams::default()), state).await;
     };
 
     // Begin transaction for reading things from the db.
@@ -68,25 +66,25 @@ pub async fn handler(
             .wrap_err("failed to start transaction")?
     };
 
-    let old_page = get_page_content_for_update(&mut *tx, universe.locate(path))
+    let old_page = get_page_content(&mut *tx, path)
         .await
         .wrap_err("failed to get page content")?;
 
     if let Some(last_change) = old_page.as_ref().map(|c| &c.latest_change_hash) {
         let Some(form_hash) = form.latest_change_hash.as_ref() else {
             // TODO show flash
-            return show(context, Query(QueryParams::default()), universe, state).await;
+            return show(context, Query(QueryParams::default()), state).await;
         };
 
         if last_change != form_hash {
             // TODO show flash
-            return show(context, Query(QueryParams::default()), universe, state).await;
+            return show(context, Query(QueryParams::default()), state).await;
         }
     }
 
     if old_page.as_ref().map(|c| &c.content) == Some(&form.source) {
         // bail early if the two texts are the exact same
-        return show(context, Query(QueryParams::default()), universe, state).await;
+        return show(context, Query(QueryParams::default()), state).await;
     }
 
     let old_source = old_page.as_ref().map(|c| c.content.as_str()).unwrap_or("");
@@ -103,12 +101,12 @@ pub async fn handler(
     let changes = dmp.patch_to_text(&patches);
 
     // make update to page content
-    update_page_content(&mut *tx, universe.locate(path), &form.source)
+    update_page_content(&mut *tx, path, &form.source)
         .await
         .wrap_err("failed to update page content")?;
 
     // get links in source
-    let old_links = get_links_from(&mut *tx, universe.locate(path))
+    let old_links = get_links_from(&mut *tx, path)
         .await
         .wrap_err("failed to get links from page")?
         .into_iter()
@@ -135,7 +133,7 @@ pub async fn handler(
     for link in links.iter() {
         // if link is missing, add it
         if !old_links.contains(link) {
-            establish_link(&mut *tx, universe.locate(path), link)
+            establish_link(&mut *tx, path, link)
                 .await
                 .wrap_err("failed to establish link")?;
         }
@@ -144,26 +142,21 @@ pub async fn handler(
     for link in old_links.iter() {
         // if link is now missing, remove it
         if !links.contains(link) {
-            deregister_link(&mut *tx, universe.locate(path), link)
+            deregister_link(&mut *tx, path, link)
                 .await
                 .wrap_err("failed to deregister link")?;
         }
     }
 
     // add change to db
-    save_change(
-        &mut *tx,
-        universe.locate(path),
-        &current_user.username,
-        &changes,
-    )
-    .await
-    .wrap_err("failed to save changes")?;
+    save_change(&mut *tx, path, &current_user.username, &changes)
+        .await
+        .wrap_err("failed to save changes")?;
 
     // commit changes
     tx.commit()
         .await
         .wrap_err("failed to commit database changes")?;
 
-    show(context, Query(QueryParams::default()), universe, state).await
+    show(context, Query(QueryParams::default()), state).await
 }

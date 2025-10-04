@@ -3,9 +3,7 @@
 use axum::extract::{Form, State};
 use axum::response::{IntoResponse, Redirect, Response, Result};
 
-use crate::routes::log_error;
-use crate::schema::session::dispose_session;
-use crate::ServerState;
+use crate::{routes::log_error, schema::session::dispose_session, ServerState};
 
 use serde::Deserialize;
 

@@ -5,77 +5,41 @@
 
 use base16::encode_lower;
 use chrono::Utc;
-use sqlx::{Executor, Postgres};
+use sqlx::Executor;
 
 use tracing::instrument;
 
 use sha2::{Digest, Sha256};
 
 use crate::slug::Slug;
-use crate::universe::Locator;
+
+use super::Database as PreferredDatabase;
 
 /// Result of [`get_page_content`] and [`get_page_for_update`].
 #[derive(sqlx::FromRow)]
 pub struct Page {
-    pub path: Slug,
+    pub slug: Slug,
     pub content: String,
     pub latest_change_hash: String,
 }
 
 /// Gets the content of a page.
 #[instrument]
-pub async fn get_page_content<'c, E>(
-    db: E,
-    Locator { universe_id, path }: Locator<'_>,
-) -> Result<Option<Page>, sqlx::Error>
+pub async fn get_page_content<'c, E>(db: E, slug: &Slug) -> Result<Option<Page>, sqlx::Error>
 where
-    E: Executor<'c, Database = Postgres>,
+    E: Executor<'c, Database = PreferredDatabase>,
 {
     sqlx::query_as(
         r#"
-        SELECT p.path, p.content, c.hash AS latest_change_hash
+        SELECT p.slug, p.content, c.hash AS latest_change_hash
         FROM pages p
         RIGHT JOIN changes c ON c.page_id = p.id
-        WHERE
-            path = $1 AND
-            universe_id = $2
+        WHERE slug = $1
         ORDER BY c.inserted_at DESC
         LIMIT 1
         "#,
     )
-    .bind(path.as_str())
-    .bind(universe_id)
-    .fetch_optional(db)
-    .await
-}
-
-/// Gets the content of a page for an update.
-///
-/// This function sets up a lock for an update, as opposed to
-/// [`get_page_content`]. If you just want the page, use [`get_page_content`].
-#[instrument]
-pub async fn get_page_content_for_update<'c, E>(
-    db: E,
-    Locator { universe_id, path }: Locator<'_>,
-) -> Result<Option<Page>, sqlx::Error>
-where
-    E: Executor<'c, Database = Postgres>,
-{
-    sqlx::query_as(
-        r#"
-        SELECT p.path, p.content, c.hash AS latest_change_hash
-        FROM pages p
-        RIGHT JOIN changes c ON c.page_id = p.id
-        WHERE
-            path = $1 AND
-            universe_id = $2
-        ORDER BY c.inserted_at DESC
-        LIMIT 1
-        FOR UPDATE
-        "#,
-    )
-    .bind(path.as_str())
-    .bind(universe_id)
+    .bind(slug.as_str())
     .fetch_optional(db)
     .await
 }
@@ -87,28 +51,27 @@ where
 #[instrument]
 pub async fn update_page_content<'c, E>(
     db: E,
-    Locator { universe_id, path }: Locator<'_>,
+    slug: &Slug,
     content: &str,
 ) -> Result<(), sqlx::Error>
 where
-    E: Executor<'c, Database = Postgres>,
+    E: Executor<'c, Database = PreferredDatabase>,
 {
     let updated_at = Utc::now();
 
     sqlx::query(
         r#"
-        INSERT INTO pages (universe_id, path, content, inserted_at, updated_at)
-        VALUES ($4, $1, $2, $3, $3)
-        ON CONFLICT (path, universe_id) DO UPDATE
+        INSERT INTO pages (slug, content, inserted_at, updated_at)
+        VALUES ($1, $2, $3, $3)
+        ON CONFLICT(slug) DO UPDATE
         SET
             content = excluded.content,
             updated_at = excluded.updated_at
         "#,
     )
-    .bind(path.as_str())
+    .bind(slug.as_str())
     .bind(content)
-    .bind(updated_at)
-    .bind(universe_id)
+    .bind(format!("{}", updated_at.format("%+")))
     .execute(db)
     .await
     .map(|_| ())
@@ -120,12 +83,12 @@ where
 /// called in conjunction with [`update_page_content`].
 pub async fn save_change<'c, E>(
     db: E,
-    Locator { universe_id, path }: Locator<'_>,
+    slug: &Slug,
     author: &str,
     changes: &str,
 ) -> Result<String, sqlx::Error>
 where
-    E: Executor<'c, Database = Postgres>,
+    E: Executor<'c, Database = PreferredDatabase>,
 {
     let inserted_at = Utc::now();
 
@@ -133,7 +96,7 @@ where
     let mut hasher = Sha256::new();
 
     // also has the author, page path and time
-    hasher.update(path.as_str());
+    hasher.update(slug.as_str());
     hasher.update(author);
     hasher.update(inserted_at.timestamp().to_le_bytes());
     // hash changes
@@ -149,17 +112,15 @@ where
         SELECT p.id, u.id, $3, $4, $5
         FROM pages p, users u
         WHERE
-            p.path = $1 AND
-            p.universe_id = $6 AND
+            p.slug = $1 AND
             u.username = $2
         "#,
     )
-    .bind(path.as_str())
+    .bind(slug.as_str())
     .bind(author)
     .bind(&hash)
     .bind(changes)
-    .bind(inserted_at)
-    .bind(universe_id)
+    .bind(format!("{}", inserted_at.format("%+")))
     .execute(db)
     .await
     .map(|_| hash)
@@ -167,25 +128,19 @@ where
 
 /// Gets all the links registered in the database from a page.
 #[instrument]
-pub async fn get_links_from<'c, E>(
-    db: E,
-    Locator { universe_id, path }: Locator<'_>,
-) -> Result<Vec<Slug>, sqlx::Error>
+pub async fn get_links_from<'c, E>(db: E, slug: &Slug) -> Result<Vec<Slug>, sqlx::Error>
 where
-    E: Executor<'c, Database = Postgres>,
+    E: Executor<'c, Database = PreferredDatabase>,
 {
     sqlx::query_as::<_, (String,)>(
         r#"
-        SELECT l.dest_path
+        SELECT l.dest_slug
         FROM pages p
         RIGHT JOIN links l ON p.id = l.source_id
-        WHERE
-            p.path = $1 AND
-            (p.universe_id = $2 OR p.universe_id IS NULL AND $2 IS NULL)
+        WHERE p.slug = $1
         "#,
     )
-    .bind(path.as_str())
-    .bind(universe_id)
+    .bind(slug.as_str())
     .fetch_all(db)
     .await
     .map(|inner| {
@@ -199,26 +154,20 @@ where
 /// Gets all the links registered in the database from a page, filtering only
 /// the ones that exist
 #[instrument]
-pub async fn get_existing_links_from<'c, E>(
-    db: E,
-    Locator { universe_id, path }: Locator<'_>,
-) -> Result<Vec<Slug>, sqlx::Error>
+pub async fn get_existing_links_from<'c, E>(db: E, slug: &Slug) -> Result<Vec<Slug>, sqlx::Error>
 where
-    E: Executor<'c, Database = Postgres>,
+    E: Executor<'c, Database = PreferredDatabase>,
 {
     sqlx::query_as::<_, (String,)>(
         r#"
-        SELECT l.dest_path
+        SELECT l.dest_slug
         FROM pages p
         RIGHT JOIN links l ON p.id = l.source_id
-        JOIN pages p2 ON p2.path = l.dest_path
-        WHERE
-            p.path = $1 AND
-            p.universe_id = $2
+        JOIN pages p2 ON p2.slug = l.dest_slug
+        WHERE p.slug = $1
         "#,
     )
-    .bind(path.as_str())
-    .bind(universe_id)
+    .bind(slug.as_str())
     .fetch_all(db)
     .await
     .map(|inner| {
@@ -230,32 +179,22 @@ where
 }
 
 /// Adds a new relational link.
-pub async fn establish_link<'c, E>(
-    db: E,
-    Locator {
-        universe_id,
-        path: from,
-    }: Locator<'_>,
-    to: &Slug,
-) -> Result<(), sqlx::Error>
+pub async fn establish_link<'c, E>(db: E, from: &Slug, to: &Slug) -> Result<(), sqlx::Error>
 where
-    E: Executor<'c, Database = Postgres>,
+    E: Executor<'c, Database = PreferredDatabase>,
 {
     sqlx::query(
         r#"
-        INSERT INTO links (source_id, dest_path)
+        INSERT INTO links (source_id, dest_slug)
         SELECT p.id, $2
         FROM pages p
-        WHERE
-            p.path = $1 AND
-            p.universe_id = $3
-        ON CONFLICT (source_id, dest_path)
+        WHERE p.slug = $1
+        ON CONFLICT (source_id, dest_slug)
         DO NOTHING
         "#,
     )
     .bind(from.as_str())
     .bind(to.as_str())
-    .bind(universe_id)
     .execute(db)
     .await
     .map(|_| ())
@@ -263,16 +202,9 @@ where
 
 /// Deletes a relational link.
 #[instrument]
-pub async fn deregister_link<'c, E>(
-    db: E,
-    Locator {
-        universe_id,
-        path: from,
-    }: Locator<'_>,
-    to: &Slug,
-) -> Result<(), sqlx::Error>
+pub async fn deregister_link<'c, E>(db: E, from: &Slug, to: &Slug) -> Result<(), sqlx::Error>
 where
-    E: Executor<'c, Database = Postgres>,
+    E: Executor<'c, Database = PreferredDatabase>,
 {
     sqlx::query(
         r#"
@@ -280,18 +212,15 @@ where
         USING (
             SELECT id
             FROM pages
-            WHERE
-                path = $1 AND
-                universe_id = $3
+            WHERE slug = $1
         ) AS p
         WHERE
             l.source_id = p.id AND
-            l.dest_path = $2
+            l.dest_slug = $2
         "#,
     )
     .bind(from.as_str())
     .bind(to.as_str())
-    .bind(universe_id)
     .execute(db)
     .await
     .map(|_| ())

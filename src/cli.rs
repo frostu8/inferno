@@ -1,19 +1,12 @@
 //! General server-only types and functions.
 
-use crate::{
-    crypto,
-    schema::{
-        universe::{create_universe, CreateUniverse as CreateUniverseSchema},
-        user,
-    },
-    ServerState,
-};
+use crate::{crypto, schema::user, ServerState};
 
 use clap::{Args, Parser, Subcommand};
 
 use eyre::{Report, WrapErr};
 
-use sqlx::PgPool;
+use sqlx::AnyPool;
 
 /// The Inferno wiki-management system.
 #[derive(Parser, Debug)]
@@ -39,16 +32,6 @@ impl Cli {
                     create_user_with_password(&state.pool, &cmd.username, &cmd.password)
                         .await
                         .wrap_err("failed to create user")?;
-                }
-                Command::Create(Create::Universe(cmd)) => {
-                    create_universe(
-                        &state.pool,
-                        CreateUniverseSchema {
-                            host: Some(&cmd.host),
-                        },
-                    )
-                    .await
-                    .wrap_err("failed to create universe")?;
                 }
                 Command::Create(Create::SigningKey) => {
                     let key = crate::random_signing_key();
@@ -76,8 +59,6 @@ pub enum Command {
 pub enum Create {
     /// Creates a new user.
     User(CreateUser),
-    /// Creates a new universe.
-    Universe(CreateUniverse),
     /// Creates a new signing key for use in `TOKEN_SIGNING_KEY`
     SigningKey,
 }
@@ -93,14 +74,6 @@ pub struct CreateUser {
     pub password: String,
 }
 
-/// Creates a new universe  in the database.
-#[derive(Debug, Args)]
-pub struct CreateUniverse {
-    /// The virtual host of the universe.
-    #[arg(short = 'H', long)]
-    pub host: String,
-}
-
 pub enum ShouldContinue {
     /// The server should start as normal.
     Daemon,
@@ -110,7 +83,7 @@ pub enum ShouldContinue {
 
 /// Creates a new user in the database manually.
 pub async fn create_user_with_password(
-    db: &PgPool,
+    db: &AnyPool,
     username: &str,
     password: &str,
 ) -> Result<(), sqlx::Error> {

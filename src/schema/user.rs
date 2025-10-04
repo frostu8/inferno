@@ -1,10 +1,12 @@
 //! User operations.
 
-use sqlx::{Executor, Postgres};
+use sqlx::Executor;
 
 use chrono::Utc;
 
 use tracing::instrument;
+
+use super::Database as PreferredDatabase;
 
 /// A full user record.
 #[derive(Clone, Debug, sqlx::FromRow)]
@@ -25,7 +27,7 @@ pub struct PasswordLogin {
 #[instrument]
 pub async fn get_user<'c, E>(db: E, username: &str) -> Result<Option<User>, sqlx::Error>
 where
-    E: Executor<'c, Database = Postgres>,
+    E: Executor<'c, Database = PreferredDatabase>,
 {
     sqlx::query_as(
         r#"
@@ -46,7 +48,7 @@ pub async fn get_password_login<'c, E>(
     username: &str,
 ) -> Result<Option<PasswordLogin>, sqlx::Error>
 where
-    E: Executor<'c, Database = Postgres>,
+    E: Executor<'c, Database = PreferredDatabase>,
 {
     sqlx::query_as(
         r#"
@@ -64,7 +66,7 @@ where
 /// Creates a user account with no login, returning the user.
 pub async fn create_user<'c, E>(db: E, username: &str) -> Result<User, sqlx::Error>
 where
-    E: Executor<'c, Database = Postgres>,
+    E: Executor<'c, Database = PreferredDatabase>,
 {
     let inserted_at = Utc::now();
 
@@ -76,8 +78,7 @@ where
         "#,
     )
     .bind(username)
-    .bind(inserted_at)
-    .bind(inserted_at)
+    .bind(format!("{}", inserted_at.format("%+")))
     .fetch_one(db)
     .await
 }

@@ -21,3 +21,6 @@ Cargo.lock
 
 # ignore web build artifacts
 /site
+
+# ignore testing database
+/dev.sqlite

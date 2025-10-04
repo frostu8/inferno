@@ -5,5 +5,6 @@
 
 pub mod page;
 pub mod session;
-pub mod universe;
 pub mod user;
+
+pub type Database = sqlx::Any;

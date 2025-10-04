@@ -1,12 +1,12 @@
 #![forbid(unsafe_code)]
 
 use color_eyre::Section;
-use eyre::{Report, WrapErr};
+use eyre::Report;
 
 use inferno::{
     account::refresh_session_middleware,
     cli::{Cli, ShouldContinue},
-    read_config, routes, ServerState,
+    read_config, routes,
 };
 
 use tracing::info;
@@ -20,6 +20,7 @@ use std::net::SocketAddr;
 #[tokio::main]
 async fn main() -> Result<(), Report> {
     install_tracing();
+    sqlx::any::install_default_drivers();
     color_eyre::install()?;
     dotenv::dotenv().ok();
 
@@ -39,9 +40,6 @@ async fn main() -> Result<(), Report> {
             .note("a database recreation may be necessary"));
     }
 
-    // create default universe if it doesn't exist
-    create_default_universe(&state).await?;
-
     // TODO proper port/addr stuff
     let addr: SocketAddr = ([0, 0, 0, 0], state.port).into();
 
@@ -58,24 +56,6 @@ async fn main() -> Result<(), Report> {
     info!("listening on {}...", addr);
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, routes).await.map_err(Report::from)
-}
-
-async fn create_default_universe(state: &ServerState) -> Result<(), Report> {
-    use inferno::schema::universe::{create_global_universe, get_global_universe, CreateUniverse};
-
-    match get_global_universe(&state.pool).await {
-        Ok(_) => Ok(()),
-        Err(sqlx::Error::RowNotFound) => {
-            create_global_universe(&state.pool, CreateUniverse { host: None })
-                .await
-                .map(|_| ())
-                .wrap_err("failed to create default universe")
-        }
-        Err(err) => Err(Report::wrap_err(
-            err.into(),
-            "failed to find default universe",
-        )),
-    }
 }
 
 fn install_tracing() {

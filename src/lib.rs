@@ -10,6 +10,5 @@ pub mod routes;
 pub mod schema;
 pub mod slug;
 pub mod state;
-pub mod universe;
 
 pub use state::*;

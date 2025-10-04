@@ -11,7 +11,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use jsonwebtoken::{errors::Error as JwtError, DecodingKey, EncodingKey};
 
-use sqlx::{pool::PoolOptions, PgPool};
+use sqlx::{pool::PoolOptions, AnyPool};
 
 use color_eyre::Section;
 use eyre::{Report, WrapErr as _};
@@ -91,7 +91,7 @@ pub struct ServerState {
     /// Where static files should be served from.
     pub static_files_dir: PathBuf,
     /// A database connection pool.
-    pub pool: PgPool,
+    pub pool: AnyPool,
     /// The secret signing keys for tokens.
     ///
     /// This is randomly generated on app startup. This means that when the

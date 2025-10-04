@@ -2,7 +2,9 @@
 
 use chrono::Utc;
 
-use sqlx::{Executor, Postgres};
+use sqlx::Executor;
+
+use super::Database as PreferredDatabase;
 
 #[derive(Debug, sqlx::FromRow)]
 pub struct SessionUser {
@@ -14,7 +16,7 @@ pub struct SessionUser {
 /// Creates a new session.
 pub async fn create_session<'c, E>(db: E, username: &str, hash: &str) -> Result<(), sqlx::Error>
 where
-    E: Executor<'c, Database = Postgres>,
+    E: Executor<'c, Database = PreferredDatabase>,
 {
     assert!(hash.len() <= 64);
 
@@ -30,7 +32,7 @@ where
     )
     .bind(username)
     .bind(hash)
-    .bind(inserted_at)
+    .bind(format!("{}", inserted_at.format("%+")))
     .execute(db)
     .await
     .map(|_| ())
@@ -39,7 +41,7 @@ where
 /// Fetches a session by hash.
 pub async fn get_session<'c, E>(db: E, hash: &str) -> Result<Option<SessionUser>, sqlx::Error>
 where
-    E: Executor<'c, Database = Postgres>,
+    E: Executor<'c, Database = PreferredDatabase>,
 {
     assert!(hash.len() <= 64);
 
@@ -61,7 +63,7 @@ where
 /// Destroys a session by hash.
 pub async fn dispose_session<'c, E>(db: E, hash: &str) -> Result<(), sqlx::Error>
 where
-    E: Executor<'c, Database = Postgres>,
+    E: Executor<'c, Database = PreferredDatabase>,
 {
     let updated_at = Utc::now();
 
@@ -77,7 +79,7 @@ where
         "#,
     )
     .bind(hash)
-    .bind(updated_at)
+    .bind(format!("{}", updated_at.format("%+")))
     .execute(db)
     .await
     .map(|_| ())

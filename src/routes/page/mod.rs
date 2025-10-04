@@ -21,7 +21,7 @@ use axum::{
     RequestPartsExt,
 };
 
-use sqlx::{Executor, Postgres};
+use sqlx::Executor;
 
 use eyre::{Report, WrapErr};
 
@@ -29,9 +29,11 @@ use crate::{
     account::{CurrentUser, Error as AccountError},
     error::ServerError,
     markdown::{self, filters::FiltersExt as _},
-    schema::page::{get_existing_links_from, get_page_content, Page},
+    schema::{
+        page::{get_existing_links_from, get_page_content, Page},
+        Database as PreferredDatabase,
+    },
     slug::Slug,
-    universe::CurrentUniverse,
     ServerState,
 };
 
@@ -53,15 +55,11 @@ impl<'a> Renderer<'a> {
     }
 
     /// Fetches the links for the page.
-    pub async fn resolve_links<'c, E>(
-        self,
-        db: E,
-        universe: &CurrentUniverse,
-    ) -> Result<Self, sqlx::Error>
+    pub async fn resolve_links<'c, E>(self, db: E) -> Result<Self, sqlx::Error>
     where
-        E: Executor<'c, Database = Postgres>,
+        E: Executor<'c, Database = PreferredDatabase>,
     {
-        let links = get_existing_links_from(db, universe.locate(&self.page.path))
+        let links = get_existing_links_from(db, &self.page.slug)
             .await?
             .into_iter()
             .collect::<HashSet<Slug>>();
@@ -164,9 +162,6 @@ where
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let request_uri = parts.uri.clone();
-        let current_universe = parts
-            .extract_with_state::<CurrentUniverse, _>(state)
-            .await?;
         let current_user = parts.extract_with_state(state).await;
         let Path(path) = parts
             .extract::<Path<String>>()
@@ -179,7 +174,7 @@ where
 
         // render sidebar
         let state = ServerState::from_ref(state);
-        let sidebar = render_sidebar(&state, &current_universe).await?;
+        let sidebar = render_sidebar(&state).await?;
 
         Ok(Context {
             request_uri,
@@ -190,17 +185,11 @@ where
     }
 }
 
-async fn render_sidebar(
-    state: &ServerState,
-    current_universe: &CurrentUniverse,
-) -> Result<Option<RenderedPage>, ServerError> {
+async fn render_sidebar(state: &ServerState) -> Result<Option<RenderedPage>, ServerError> {
     let state = ServerState::from_ref(state);
-    let sidebar_page = get_page_content(
-        &state.pool,
-        current_universe.locate(&Slug::new("Special:Sidebar").unwrap()),
-    )
-    .await
-    .wrap_err("failed to get Special:Sidebar page")?;
+    let sidebar_page = get_page_content(&state.pool, &Slug::new("Special:Sidebar").unwrap())
+        .await
+        .wrap_err("failed to get Special:Sidebar page")?;
 
     Ok(sidebar_page.map(|page| RenderedPage::build(&page).render()))
 }

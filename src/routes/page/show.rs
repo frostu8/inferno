@@ -6,7 +6,6 @@ use crate::{
     html::HtmlTemplate,
     schema::page::{get_page_content, Page},
     slug::Slug,
-    universe::CurrentUniverse,
     ServerState,
 };
 
@@ -111,7 +110,6 @@ impl From<Page> for MaybePage {
 pub async fn handler(
     context: Context,
     params: Query<QueryParams>,
-    universe: CurrentUniverse,
     state: State<ServerState>,
 ) -> Result<Response, ServerError> {
     let Context {
@@ -124,13 +122,13 @@ pub async fn handler(
     match params.action {
         PageAction::View => {
             // get page content
-            let page = get_page_content(&state.pool, universe.locate(&path))
+            let page = get_page_content(&state.pool, &path)
                 .await
                 .wrap_err("failed to get page content")?;
 
             if let Some(page) = page {
                 let page = RenderedPage::build(&page)
-                    .resolve_links(&state.pool, &universe)
+                    .resolve_links(&state.pool)
                     .await
                     .wrap_err("failed to resolve links")?
                     .render();
@@ -158,7 +156,7 @@ pub async fn handler(
                 matches!(params.action, PageAction::ViewSource) || current_user.is_err();
 
             // get page content
-            let page = get_page_content(&state.pool, universe.locate(&path))
+            let page = get_page_content(&state.pool, &path)
                 .await
                 .wrap_err("failed to get page content")?;
 
