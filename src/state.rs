@@ -114,14 +114,11 @@ impl ServerState {
         // get url
         let Some(database_url) = config.database_url.as_ref() else {
             return Err(Report::msg("`DATABASE_URL` not present")
-                .suggestion("define `DATABASE_URL` with a valid postgres endpoint"));
+                .suggestion("define `DATABASE_URL` with a valid endpoint: postgres, sqlite"));
         };
 
         // establish database connection
-        let pool = PoolOptions::new()
-            // configure db
-            .connect(database_url)
-            .await?;
+        let pool = PoolOptions::new().connect(database_url).await?;
 
         // randomly generate JWT secret
         let keys = match config.signing_key.as_ref() {
