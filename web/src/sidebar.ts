@@ -48,7 +48,7 @@ function registerDropdownsRec(elem: HTMLElement, reference: HTMLElement, listDep
 function createDropButton(elem: HTMLElement, reference: HTMLElement, baseOptions: Options) {
   const options = { ...baseOptions };
 
-  reference.classList.add("nav-dropdown-reference");
+  //reference.classList.add("nav-dropdown-reference");
 
   // create the actual drop button
   const button = document.createElement("span");
@@ -56,7 +56,17 @@ function createDropButton(elem: HTMLElement, reference: HTMLElement, baseOptions
   button.classList.add("material-symbols-outlined");
   button.textContent = "arrow_drop_down";
 
-  button.addEventListener("click", () => {
+  // Merge the content of the sidebar
+  const header = document.createElement("div");
+  header.classList.add("nav-dropdown-header");
+
+  // empty reference into header
+  for (const childNode of reference.childNodes) {
+    header.append(childNode)
+  }
+  header.appendChild(button);
+
+  header.addEventListener("click", () => {
     options.visible = !options.visible;
 
     if (options.visible) {
@@ -86,6 +96,6 @@ function createDropButton(elem: HTMLElement, reference: HTMLElement, baseOptions
     content.appendChild(childElem);
   }
 
+  reference.appendChild(header);
   reference.appendChild(content);
-  reference.appendChild(button);
 }

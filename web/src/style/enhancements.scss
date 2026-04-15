@@ -34,10 +34,14 @@ $dropdown-bg-color: #000000 !default;
   }
 }
 
-.nav-dropdown-reference {
+.nav-dropdown-header {
   display: flex;
-  flex-flow: row wrap;
+  flex-flow: row nowrap;
   align-items: center;
+
+  .nav-dropdown-button {
+    margin-left: auto;
+  }
 
   .nav-dropdown {
     width: calc(100% - 2em);
@@ -50,7 +54,6 @@ $dropdown-bg-color: #000000 !default;
 }
 
 .nav-dropdown-button {
-  cursor: pointer;
   color: $dropdown-button_color;
   transform: rotate(0.25turn);
 }

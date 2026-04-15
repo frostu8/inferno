@@ -18,25 +18,16 @@ $fg-link-external: #646E68;
 
 @use "account/login";
 @use "enhancements" with (
-	$dropdown-button-color: $fg-primary,
+	$dropdown-button-color: #FFFFFF,
 	$dropdown-bg-color: $bg-primary
 );
 
 @mixin sidebar-item {
 	font-size: 18px;
-	//text-decoration: none;
-	color: $fg-primary;
 	background-color: inherit;
 	cursor: pointer;
 	border-radius: 0;
-	border-bottom: 2px dotted $bg-secondary-light;
 	margin: 0.25em 0;
-	padding: 0.5em 0;
-
-	&:visited {
-		color: $fg-primary;
-	}
-
 }
 
 body {
@@ -110,6 +101,7 @@ input[type="submit"] {
 input[type="submit"].sidebar-item {
 	@include sidebar-item;
 
+	color: $fg-primary;
 	padding: 0.5em 16px;
 	border-bottom: 2px dotted $bg-secondary-light;
 }
@@ -149,27 +141,34 @@ input[type="password"] {
 		margin: 1em 0 0.5em;
 	}
 
-	a {
-		text-decoration: none;
-	}
-
 	ul {
 		list-style-type: none;
-		// top leve should have no padding
 		padding: 0;
-
-		ul {
-			padding-left: 2em;
-		}
-
-		a {
-			@include sidebar-item;
-			display: block;
-		}
 	}
 
-	#sidebar-content {
-		width: 100%;
+	a {
+		text-decoration: none;
+
+		// Make links in the sidebar show only with solid colors
+		color: $fg-primary;
+		&:visited {
+			color: $fg-primary;
+		}
+	}
+}
+
+#sidebar-content {
+	width: 100%;
+
+	ul {
+		& > li {
+			@include sidebar-item;
+		}
+
+		// Increase padding recursively
+		ul {
+			padding-left: 1.5em;
+		}
 	}
 }
 
