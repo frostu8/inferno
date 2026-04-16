@@ -1,0 +1,25 @@
+{% extends "../base.html" %}
+
+{% block main %}
+  <div class="topbar">
+    <a
+      href="/~/{{ path }}"
+      class="{% if action == PageAction::View %}current{% endif %}"
+    >
+      Read
+    </a>
+    <a
+      href="/~/{{ path }}?action=edit"
+      class="{% if action == PageAction::Edit %}current{% endif %}"
+    >
+      {% if let Some(user) = current_user %}
+      Edit
+      {% else %}
+      View source
+      {% endif %}
+    </a>
+  </div>
+  <article class="page-shell">
+    {% block content %}{% endblock %}
+  </article>
+{% endblock %}

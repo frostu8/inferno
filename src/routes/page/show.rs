@@ -16,7 +16,7 @@ use axum::response::{IntoResponse, Response};
 
 use tracing::instrument;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use eyre::WrapErr;
 
@@ -32,12 +32,11 @@ pub struct QueryParams {
 }
 
 /// A page action. One of `edit` or `view`.
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PageAction {
     #[default]
     View,
-    ViewSource,
     Edit,
 }
 
@@ -52,6 +51,10 @@ pub struct ShowPageTemplate {
     pub path: Slug,
     /// The sidebar page content, if there is one.
     pub sidebar: Option<RenderedPage>,
+    /// The current action of the page.
+    pub action: PageAction,
+    /// Whether the page is being viewed in read-only mode.
+    pub read_only: bool,
     /// The actual page content.
     pub page: RenderedPage,
 }
@@ -67,6 +70,8 @@ pub struct EditPageTemplate {
     pub path: Slug,
     /// The sidebar page content, if there is one.
     pub sidebar: Option<RenderedPage>,
+    /// The current action of the page.
+    pub action: PageAction,
     /// Whether the page is being viewed in read-only mode.
     pub read_only: bool,
     /// The page.
@@ -86,6 +91,10 @@ pub struct NotFoundTemplate {
     pub path: Slug,
     /// The sidebar page content, if there is one.
     pub sidebar: Option<RenderedPage>,
+    /// The current action of the page.
+    pub action: PageAction,
+    /// Whether the page is being viewed in read-only mode.
+    pub read_only: bool,
 }
 
 pub struct MaybePage {
@@ -119,6 +128,8 @@ pub async fn handler(
         sidebar,
     } = context;
 
+    let read_only = current_user.is_err();
+
     match params.action {
         PageAction::View => {
             // get page content
@@ -138,6 +149,8 @@ pub async fn handler(
                     current_user: current_user.ok(),
                     path,
                     sidebar,
+                    action: PageAction::View,
+                    read_only,
                     page,
                 })
                 .into_response())
@@ -147,14 +160,13 @@ pub async fn handler(
                     current_user: current_user.ok(),
                     path,
                     sidebar,
+                    action: PageAction::View,
+                    read_only: false,
                 })
                 .into_response())
             }
         }
-        PageAction::Edit | PageAction::ViewSource => {
-            let read_only =
-                matches!(params.action, PageAction::ViewSource) || current_user.is_err();
-
+        PageAction::Edit => {
             // get page content
             let page = get_page_content(&state.pool, &path)
                 .await
@@ -171,6 +183,7 @@ pub async fn handler(
                     current_user: current_user.ok(),
                     path,
                     sidebar,
+                    action: PageAction::Edit,
                     read_only,
                     page: MaybePage {
                         content,
@@ -184,6 +197,7 @@ pub async fn handler(
                     current_user: current_user.ok(),
                     path,
                     sidebar,
+                    action: PageAction::Edit,
                     read_only,
                     page: MaybePage {
                         content: String::new(),

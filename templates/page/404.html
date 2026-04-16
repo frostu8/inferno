@@ -1,22 +1,11 @@
-{% extends "../base.html" %}
+{% extends "./base.html" %}
 
 {% block head %}
   <title>{{ path|title }}</title>
 {% endblock %}
 
-{% block nav %}
-  {% if let Some(user) = current_user %}
-    <li>
-      <a href="/~/{{ path }}?action=edit">
-        Create <strong>this</strong> page
-      </a>
-    </li>
-  {% endif %}
-{% endblock %}
-
 {% block content %}
   <h1 class="title">{{ path|title }}</h1>
-  <hr>
   <div class="page-content">
     <p>
       This page does not exist.

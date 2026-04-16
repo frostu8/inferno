@@ -58,8 +58,7 @@ body {
 }
 
 main {
-	padding: 0 48px;
-	margin: 16px 0;
+	margin: 48px 0;
 }
 
 blockquote {
@@ -126,6 +125,10 @@ input[type="password"] {
 
 .hidden {
 	display: none;
+}
+
+.page-shell {
+	padding: 0 48px;
 }
 
 #sidebar {
@@ -223,7 +226,7 @@ input[type="password"] {
 
 .page-admin {
 	display: flex;
-	padding: 16px 0;
+	padding: 8px 0;
 	//justify-content: center;
 }
 
@@ -264,5 +267,28 @@ a.external-link {
 	span.material-symbols-outlined {
 		font-size: inherit;
 		color: $fg-link-external;
+	}
+}
+
+.topbar {
+	display: flex;
+	flex-flow: row nowrap;
+	justify-content: end;
+
+	background: $bg-primary;
+
+	& > a {
+		color: white;
+		padding: 0.6em 1em;
+		text-decoration: none;
+
+		&:hover:not(.current) {
+			text-decoration: underline;
+		}
+
+		&.current {
+			background-color: $fg-primary;
+			color: black;
+		}
 	}
 }
