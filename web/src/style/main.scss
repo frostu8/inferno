@@ -25,7 +25,6 @@ $fg-link-external: #646E68;
 @mixin sidebar-item {
 	font-size: 18px;
 	background-color: inherit;
-	cursor: pointer;
 	border-radius: 0;
 	margin: 0.25em 0;
 }
@@ -100,6 +99,7 @@ input[type="submit"] {
 input[type="submit"].sidebar-item {
 	@include sidebar-item;
 
+	cursor: pointer;
 	color: $fg-primary;
 	padding: 0.5em 16px;
 	border-bottom: 2px dotted $bg-secondary-light;
