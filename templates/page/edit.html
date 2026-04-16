@@ -22,7 +22,6 @@
     {% if read_only %}Viewing{% else %}Editing{% endif %}
     {{ path|title }}
   </h1>
-  <hr>
   <form class="editor" action="/~/{{ path }}" method="post">
     <textarea
       id="page-source" name="source" rows="40"

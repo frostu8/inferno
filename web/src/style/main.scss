@@ -182,8 +182,18 @@ input[type="password"] {
   }
 }
 
-hr {
-	border: 2px dotted gray;
+.title {
+	margin: 0.5em 0;
+	border-bottom: 2px solid white;
+
+	&:after {
+		content: '';
+	  display: block;
+	  border-bottom: 2px solid $fg-primary;
+		padding-bottom: 10px;
+	  margin-bottom: -2px;
+	  max-width: 50px;
+	}
 }
 
 .subtitle {
