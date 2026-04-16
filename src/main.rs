@@ -1,11 +1,17 @@
 #![forbid(unsafe_code)]
 
+use axum::{
+    extract::Request,
+    middleware::{from_fn, Next},
+    response::Response,
+};
 use color_eyre::Section;
 use eyre::Report;
 
 use inferno::{
     account::refresh_session_middleware,
     cli::{Cli, ShouldContinue},
+    error::Error,
     read_config, routes,
 };
 
@@ -13,7 +19,7 @@ use tracing::info;
 
 use tower_http::{services::ServeDir, trace::TraceLayer};
 
-use std::net::SocketAddr;
+use std::{net::SocketAddr, sync::Arc};
 
 // HACK something in tokio::main is causing this lint to raise
 #[allow(clippy::needless_return)]
@@ -51,7 +57,8 @@ async fn main() -> Result<(), Report> {
         ))
         .with_state(state)
         .fallback_service(static_dir)
-        .layer(TraceLayer::new_for_http());
+        .layer(TraceLayer::new_for_http())
+        .layer(from_fn(log_app_errors));
 
     info!("listening on {}...", addr);
     let listener = tokio::net::TcpListener::bind(addr).await?;
@@ -73,4 +80,14 @@ fn install_tracing() {
         .with(fmt_layer)
         .with(ErrorLayer::default())
         .init();
+}
+
+// Stolen from: https://github.com/tokio-rs/axum/blob/main/examples/error-handling/src/main.rs
+async fn log_app_errors(request: Request, next: Next) -> Response {
+    let response = next.run(request).await;
+    // If the response contains an AppError Extension, log it.
+    if let Some(err) = response.extensions().get::<Arc<Error>>() {
+        tracing::error!(?err, "an unexpected error occurred inside a handler");
+    }
+    response
 }

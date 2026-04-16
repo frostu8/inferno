@@ -2,7 +2,7 @@
 
 use crate::{
     account::CurrentUser,
-    error::ServerError,
+    error::Error,
     html::HtmlTemplate,
     schema::page::{get_page_content, Page},
     slug::Slug,
@@ -120,7 +120,7 @@ pub async fn handler(
     context: Context,
     params: Query<QueryParams>,
     state: State<ServerState>,
-) -> Result<Response, ServerError> {
+) -> Result<Response, Error> {
     let Context {
         request_uri,
         current_user,

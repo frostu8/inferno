@@ -27,7 +27,7 @@ use eyre::{Report, WrapErr};
 
 use crate::{
     account::{CurrentUser, Error as AccountError},
-    error::ServerError,
+    error::Error,
     markdown::{self, filters::FiltersExt as _},
     schema::{
         page::{get_existing_links_from, get_page_content, Page},
@@ -158,7 +158,7 @@ where
     ServerState: FromRef<S>,
     S: Send + Sync,
 {
-    type Rejection = BadSlugRedirect<ServerError>;
+    type Rejection = BadSlugRedirect<Error>;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let request_uri = parts.uri.clone();
@@ -185,7 +185,7 @@ where
     }
 }
 
-async fn render_sidebar(state: &ServerState) -> Result<Option<RenderedPage>, ServerError> {
+async fn render_sidebar(state: &ServerState) -> Result<Option<RenderedPage>, Error> {
     let state = ServerState::from_ref(state);
     let sidebar_page = get_page_content(&state.pool, &Slug::new("Special:Sidebar").unwrap())
         .await
@@ -220,9 +220,9 @@ where
     }
 }
 
-impl From<Report> for BadSlugRedirect<ServerError> {
+impl From<Report> for BadSlugRedirect<Error> {
     fn from(value: Report) -> Self {
-        BadSlugRedirect::Other(ServerError::from(value))
+        BadSlugRedirect::Other(Error::from(value))
     }
 }
 

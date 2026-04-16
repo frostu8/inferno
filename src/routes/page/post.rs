@@ -1,7 +1,7 @@
 //! Page post stuff.
 
 use crate::{
-    error::ServerError,
+    error::Error,
     markdown::{self, is_uri_absolute},
     schema::page::{
         deregister_link, establish_link, get_links_from, get_page_content, save_change,
@@ -46,7 +46,7 @@ pub async fn handler(
     context: Context,
     state: State<ServerState>,
     Form(form): Form<UpdatePage>,
-) -> Result<Response, ServerError> {
+) -> Result<Response, Error> {
     let Context {
         current_user, path, ..
     } = &context;
