@@ -96,15 +96,6 @@ input[type="submit"] {
 	}
 }
 
-input[type="submit"].sidebar-item {
-	@include sidebar-item;
-
-	cursor: pointer;
-	color: $fg-primary;
-	padding: 0.5em 16px;
-	border-bottom: 2px dotted $bg-secondary-light;
-}
-
 input[type="text"],
 input[type="password"] {
 	padding: 0.5em;
@@ -183,6 +174,19 @@ input[type="password"] {
   .username {
     font-weight: bold;
   }
+
+	input[type="submit"], a {
+		@include sidebar-item;
+
+		cursor: pointer;
+		color: $fg-primary;
+		padding: 0.5em 16px;
+		border-bottom: 2px dotted $bg-secondary-light;
+	}
+
+	a.right {
+		margin-left: auto;
+	}
 }
 
 .title {
