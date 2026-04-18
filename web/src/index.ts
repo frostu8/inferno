@@ -1,8 +1,10 @@
 import {EditorView, basicSetup} from "codemirror";
 import {EditorState} from "@codemirror/state";
 import {markdown} from "@codemirror/lang-markdown";
+import {Strikethrough} from "@lezer/markdown";
 import {infernoTheme} from "./theme";
 import {hookDropdowns} from "./sidebar";
+import {Wikilinks} from "./extensions";
 
 import './style/main.scss';
 
@@ -64,7 +66,12 @@ export function upgradeEditor(textArea: HTMLTextAreaElement) {
 
   let extensions = [
     basicSetup,
-    markdown(),
+    markdown({
+      extensions: [
+        Strikethrough,
+        Wikilinks
+      ]
+    }),
     EditorView.lineWrapping,
     infernoTheme,
     syncText
